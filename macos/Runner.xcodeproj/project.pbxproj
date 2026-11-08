@@ -907,6 +907,10 @@
 				kind = revision;
 				revision = 93a024a5b72a735c996ca289e7dc0ed8d09dc787;
 			};
+			traits = (
+				TrueHDObjectAudio,
+				DTSXObjectAudio,
+			);
 		};
 		755057A94BFFB3D132856F38 /* XCRemoteSwiftPackageReference "libass-build" */ = {
 			isa = XCRemoteSwiftPackageReference;

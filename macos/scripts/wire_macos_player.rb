@@ -169,3 +169,23 @@ end
 
 project.save
 puts 'saved project'
+
+# AetherEngine's object audio (TrueHD Atmos and DTS:X heights) is compiled in
+# only when its package traits are on, and they are off by default. The
+# xcodeproj gem does not model the `traits` key, so write it into the saved
+# project the way Xcode stores it. Idempotent.
+aether_traits = %w[TrueHDObjectAudio DTSXObjectAudio]
+pbx_path = File.join(project_path, 'project.pbxproj')
+pbx = File.read(pbx_path)
+block = /(\/\* XCRemoteSwiftPackageReference "AetherEngine" \*\/ = \{\n(?:\t\t\t.*\n)*?)(\t\t\};)/
+if pbx =~ block
+  if $1.include?("\t\t\ttraits = (")
+    puts 'AetherEngine traits already present'
+  else
+    entry = "\t\t\ttraits = (\n" + aether_traits.map { |t| "\t\t\t\t#{t},\n" }.join + "\t\t\t);\n"
+    File.write(pbx_path, pbx.sub(block) { "#{$1}#{entry}#{$2}" })
+    puts "wrote AetherEngine traits: #{aether_traits.join(', ')}"
+  end
+elsif !use_local_aether
+  abort 'AetherEngine package reference not found, traits not written'
+end

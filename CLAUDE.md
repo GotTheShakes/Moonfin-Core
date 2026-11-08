@@ -24,6 +24,21 @@ On a fresh clone of the fork, remote-tracking refs may be missing, so run
 `git fetch origin +refs/heads/aether-atmos-dv:refs/remotes/origin/aether-atmos-dv`
 after pushing if a hook complains about unpushed commits.
 
+## Pulling in upstream Moonfin
+
+1. The owner clicks **Sync fork** on the fork's `main` on GitHub (main carries
+   no fork work).
+2. Merge `origin/main` into the working branch, resolve conflicts, push, and
+   run the macOS build.
+3. **Engine bumps:** upstream pins AetherEngine as a remote package reference
+   in `macos/Runner.xcodeproj/project.pbxproj` and in
+   `macos/scripts/wire_macos_player.rb` (`aether_remote_url`,
+   `aether_revision`). This fork removes that reference and links the engine
+   only through `macos/AetherEngineTraits/Package.swift`. If a merge brings a
+   new revision, put it in that Package.swift (and the script), and drop the
+   re-added remote reference from the .pbxproj, or the build stays on the old
+   engine or fails to resolve. Check that the traits still compile.
+
 ## Done so far (see docs/macos-atmos-and-dolby-vision.md)
 
 1. **Atmos / DTS:X heights on macOS.** With the setting on,

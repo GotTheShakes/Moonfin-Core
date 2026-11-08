@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:server_core/server_core.dart';
 
@@ -135,12 +137,38 @@ class PlexSystemApi implements SystemApi {
   }
 }
 
+/// Where a Plex account's app-side settings are kept. Plex has no server
+/// route for them, so the host app supplies local storage.
+abstract interface class PlexConfigStore {
+  Future<String?> read(String key);
+  Future<void> write(String key, String value);
+}
+
 class PlexUsersApi implements UsersApi {
   final Dio _dio;
   final String Function() _userId;
   final void Function(UserPolicy policy) _onPolicy;
+  final PlexConfigStore? _store;
+  String? _machineId;
 
-  PlexUsersApi(this._dio, this._userId, this._onPolicy);
+  PlexUsersApi(
+    this._dio,
+    this._userId,
+    this._onPolicy, {
+    PlexConfigStore? configStore,
+  }) : _store = configStore;
+
+  /// One entry per server and account, since library ids only mean something
+  /// on the server that issued them.
+  Future<String> _configKey() async {
+    var machine = _machineId;
+    if (machine == null) {
+      final identity = await plexContainer(_dio, '/identity');
+      machine = identity['machineIdentifier']?.toString() ?? 'unknown';
+      _machineId = machine;
+    }
+    return 'plex_user_configuration/$machine/${_userId()}';
+  }
 
   /// Plex has no route for the signed in user, so this checks the token
   /// against the server and answers with the id the session already has.
@@ -178,12 +206,34 @@ class PlexUsersApi implements UsersApi {
   Future<List<AccessSchedule>?> getAccessSchedules(String userId) async =>
       const [];
 
+  /// Plex keeps no library visibility or order for an account, so what the
+  /// user sets in the app is kept on this device. A missing or unreadable
+  /// entry reads as the defaults.
   @override
-  Future<UserConfiguration> getUserConfiguration() async =>
-      const UserConfiguration();
+  Future<UserConfiguration> getUserConfiguration() async {
+    final store = _store;
+    if (store == null) return const UserConfiguration();
+    try {
+      final raw = await store.read(await _configKey());
+      if (raw == null) return const UserConfiguration();
+      final json = jsonDecode(raw);
+      if (json is! Map<String, dynamic>) return const UserConfiguration();
+      return UserConfiguration.fromJson(json);
+    } catch (_) {
+      return const UserConfiguration();
+    }
+  }
 
+  /// Throws when nothing can keep the change, so the settings screen puts the
+  /// toggle back and says it didn't save rather than pretending it did.
   @override
-  Future<void> updateUserConfiguration(UserConfiguration config) async {}
+  Future<void> updateUserConfiguration(UserConfiguration config) async {
+    final store = _store;
+    if (store == null) {
+      throw UnsupportedError("Plex settings can't be saved without storage");
+    }
+    await store.write(await _configKey(), jsonEncode(config.toJson()));
+  }
 }
 
 class PlexUserViewsApi implements UserViewsApi {

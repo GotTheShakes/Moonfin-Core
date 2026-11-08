@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:server_core/server_core.dart'
-    show ImageType, MetadataRefreshMode, UserPolicy;
+    show ImageType, MetadataRefreshMode, UserConfiguration, UserPolicy;
 import 'package:server_plex/src/api/plex_admin_items_api.dart';
 import 'package:server_plex/src/api/plex_apis.dart';
 import 'package:server_plex/src/api/plex_items_api.dart';
@@ -42,7 +42,56 @@ Map<String, dynamic> _episode(String key, String title, [String? aired]) => {
   'originallyAvailableAt': ?aired,
 };
 
+class _MemoryStore implements PlexConfigStore {
+  final values = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => values[key];
+
+  @override
+  Future<void> write(String key, String value) async => values[key] = value;
+}
+
 void main() {
+  group('Plex user configuration', () {
+    PlexUsersApi api(PlexConfigStore? store, {String machine = 'server-a'}) {
+      final (dio, _) = _recordingDio({'machineIdentifier': machine});
+      return PlexUsersApi(dio, () => 'account', (_) {}, configStore: store);
+    }
+
+    test('hiding Live TV survives a reload', () async {
+      final store = _MemoryStore();
+      final first = api(store);
+      final config = await first.getUserConfiguration();
+      expect(config.myMediaExcludes, isEmpty);
+
+      await first.updateUserConfiguration(
+        config.copyWith(myMediaExcludes: ['livetv']),
+      );
+
+      final reloaded = await api(store).getUserConfiguration();
+      expect(reloaded.myMediaExcludes, ['livetv']);
+    });
+
+    test('each server keeps its own settings', () async {
+      final store = _MemoryStore();
+      await api(store).updateUserConfiguration(
+        const UserConfiguration().copyWith(myMediaExcludes: ['livetv']),
+      );
+      final other = await api(store, machine: 'server-b').getUserConfiguration();
+      expect(other.myMediaExcludes, isEmpty);
+    });
+
+    test('without storage it reads defaults and refuses to save', () async {
+      final noStore = api(null);
+      expect((await noStore.getUserConfiguration()).myMediaExcludes, isEmpty);
+      expect(
+        noStore.updateUserConfiguration(const UserConfiguration()),
+        throwsUnsupportedError,
+      );
+    });
+  });
+
   test(
     'a library page asks Plex for the type, sort, filter and window',
     () async {

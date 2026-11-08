@@ -5,6 +5,7 @@ import 'package:server_emby/server_emby.dart';
 import 'package:server_jellyfin/server_jellyfin.dart';
 import 'package:server_plex/server_plex.dart';
 import 'package:server_silo/server_silo.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../util/platform_detection.dart';
 import '../../util/server_url.dart';
@@ -140,6 +141,7 @@ class MediaServerClientFactory {
         return PlexMediaServerClient(
           baseUrl: baseUrl,
           deviceInfo: deviceInfo,
+          configStore: _PlexPreferencesStore(),
         );
       case ServerType.silo:
         return SiloMediaServerClient(
@@ -175,4 +177,20 @@ String _siloDevicePlatform() {
   if (PlatformDetection.isWindows) return 'Windows';
   if (PlatformDetection.isLinux) return 'Linux';
   return 'Unknown';
+}
+
+/// Keeps a Plex account's library visibility and order on this device.
+class _PlexPreferencesStore implements PlexConfigStore {
+  @override
+  Future<String?> read(String key) async =>
+      (await SharedPreferences.getInstance()).getString(key);
+
+  @override
+  Future<void> write(String key, String value) async {
+    final saved = await (await SharedPreferences.getInstance()).setString(
+      key,
+      value,
+    );
+    if (!saved) throw StateError('Could not save $key');
+  }
 }

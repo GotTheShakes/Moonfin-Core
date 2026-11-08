@@ -27,8 +27,14 @@ class PlexMediaServerClient extends MediaServerClient {
   String? _accessToken;
   String? _userId;
 
-  PlexMediaServerClient({required String baseUrl, required this.deviceInfo})
-    : _baseUrl = baseUrl,
+  final PlexConfigStore? _configStore;
+
+  PlexMediaServerClient({
+    required String baseUrl,
+    required this.deviceInfo,
+    PlexConfigStore? configStore,
+  }) : _baseUrl = baseUrl,
+       _configStore = configStore,
       _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
@@ -156,6 +162,7 @@ class PlexMediaServerClient extends MediaServerClient {
     _dio,
     _requireUserId,
     (policy) => _mayDeleteMedia = policy.enableContentDeletion,
+    configStore: _configStore,
   );
 
   static Never _noAdmin() =>

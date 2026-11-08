@@ -26,12 +26,16 @@ after pushing if a hook complains about unpushed commits.
 
 ## Done so far (see docs/macos-atmos-and-dolby-vision.md)
 
-1. **Atmos / DTS:X heights on macOS.** AetherEngine's `TrueHDObjectAudio` and
-   `DTSXObjectAudio` package traits are written into
-   `macos/Runner.xcodeproj/project.pbxproj` and re-written after the project is
-   saved by `macos/scripts/wire_macos_player.rb` (the `xcodeproj` gem drops the
-   `traits` key). With the setting on, `LoadOptions.objectAudioRendering` is
-   `.render(.l916)`.
+1. **Atmos / DTS:X heights on macOS.** With the setting on,
+   `LoadOptions.objectAudioRendering` is `.render(.l916)`. The engine traits
+   (`TrueHDObjectAudio`, `DTSXObjectAudio`, `DualLayerDolbyVision`) are set in
+   the local package `macos/AetherEngineTraits`, which the Runner target links
+   (added by `macos/scripts/wire_macos_player.rb` if missing). Builds before
+   that package (up to run 42518227984) had NO traits: Xcode 26.3 ignores a
+   `traits` list on a `.pbxproj` package reference, and LibTrueHD was absent
+   from `Package.resolved`. The FEL log said `built without the
+   DualLayerDolbyVision trait`. So heights were never actually on before it.
+   Each macOS load logs `optional components built in: ...=true/false`.
 2. **Dolby Vision composition.** Sets `forceDolbyVisionOnNonDVDisplay`, the same
    switch AetherPlayer uses. No Mac reports a Dolby Vision display, so Profile
    8.1 otherwise plays as its HDR10 base layer.

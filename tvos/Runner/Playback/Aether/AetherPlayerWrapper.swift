@@ -1171,13 +1171,21 @@ final class AetherPlayerWrapper: NSObject, ObservableObject {
             autoplay: sourceConfiguration.autoPlay
         )
         #if os(macOS)
-            // Extended Apple playback on the Mac, mirroring AetherPlayer. Both come
+            // Extended Apple playback on the Mac, mirroring AetherPlayer. These come
             // from Moonfin's playback settings and apply to the next file opened.
+            //
+            // Which optional components this build has, so a log shows whether the
+            // traits reached the engine (macos/AetherEngineTraits).
+            EngineLog.emit(
+                "[AetherPlayerWrapper] optional components built in: "
+                    + AetherEngine.OptionalComponent.allCases
+                    .map { "\($0.traitName)=\($0.isBuiltIn)" }.joined(separator: " "),
+                category: .engine)
             //
             // Heights from TrueHD Atmos and DTS:X: the engine renders the objects
             // into a 9.1.6 bed and hands it to macOS as lossless PCM, which macOS
             // plays as spatial audio. Needs the TrueHDObjectAudio and DTSXObjectAudio
-            // package traits (written by wire_macos_player.rb) and macOS 26. A track
+            // package traits (enabled through macos/AetherEngineTraits) and macOS 26. A track
             // with no objects, or a build without the traits, falls back to
             // audioBridgeMode above.
             if sourceConfiguration.heightChannels {
@@ -1195,8 +1203,8 @@ final class AetherPlayerWrapper: NSObject, ObservableObject {
             // Profile 7 FEL: decode the base and enhancement layers in hardware
             // and compose them on Metal (the engine's software host), instead of
             // the single-layer 8.1 conversion that drops the enhancement layer.
-            // Needs the DualLayerDolbyVision package trait (written by
-            // wire_macos_player.rb). The engine keeps the native route for MEL,
+            // Needs the DualLayerDolbyVision package trait (enabled through
+            // macos/AetherEngineTraits). The engine keeps the native route for MEL,
             // non-Profile 7, non-seekable, or over-budget sources and logs which
             // route it took. Ignored when the source needs the base layer only.
             if sourceConfiguration.dualLayerDolbyVision,

@@ -35,11 +35,14 @@ Both appear on macOS only.
 
 ## What was changed
 
-- `macos/Runner.xcodeproj/project.pbxproj`: AetherEngine package traits
-  `TrueHDObjectAudio`, `DTSXObjectAudio` and `DualLayerDolbyVision`. Without them
-  the object audio and FEL code is not compiled in.
-- `macos/scripts/wire_macos_player.rb`: writes those traits back after the
-  script saves the project, because the `xcodeproj` gem drops them.
+- `macos/AetherEngineTraits/`: a small local Swift package that depends on the
+  same AetherEngine revision with the `TrueHDObjectAudio`, `DTSXObjectAudio`
+  and `DualLayerDolbyVision` traits on. The Runner target links it, so the
+  engine is built with them. Without them the object audio and FEL code is not
+  compiled in. (A `traits` list on the package reference in the `.pbxproj` is
+  ignored by Xcode 26, which CI uses, so the first builds had none of them.)
+- `macos/scripts/wire_macos_player.rb`: adds that package to the project if it
+  is missing.
 - `lib/preference/user_preferences.dart`, `lib/playback/aether_backend.dart`,
   the two settings screens, and `app_en.arb`: the two preferences and tiles.
   Only the English strings are added.
@@ -47,6 +50,14 @@ Both appear on macOS only.
   `AetherPlayerWrapper.swift`: pass the preferences into the engine's
   `LoadOptions` (`objectAudioRendering`, `forceDolbyVisionOnNonDVDisplay`), on
   macOS only.
+
+## Checking a build
+
+Playing any file logs which components the build has:
+
+    log stream --level debug --predicate 'subsystem == "de.superuser404.AetherEngine"' | grep -E "optional components|dual-layer|AE#455"
+
+Look for `optional components built in: TrueHDObjectAudio=true DTSXObjectAudio=true DualLayerDolbyVision=true ...`.
 
 ## Limits
 

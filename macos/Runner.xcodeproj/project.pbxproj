@@ -47,6 +47,7 @@
 		8C48B0B1C9A65F1DCDEB5820 /* MoonfinURLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2236253F57320848A04DB1E /* MoonfinURLSession.swift */; };
 		FBA8147519448B8E824AB289 /* PlayerTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159DE08E3FAD670AB77FA219 /* PlayerTypes.swift */; };
 		FBEFCF731229ED0414881250 /* AetherEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 6D721BEED7BBECEDC71E22BC /* AetherEngine */; };
+		A7E1C0DE5EED0001AE7B0001 /* AetherEngineTraits in Frameworks */ = {isa = PBXBuildFile; productRef = A7E1C0DE5EED0001AE7B0002 /* AetherEngineTraits */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +141,7 @@
 				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
 				008D0743212489872160F548 /* Pods_Runner.framework in Frameworks */,
 				FBEFCF731229ED0414881250 /* AetherEngine in Frameworks */,
+				A7E1C0DE5EED0001AE7B0001 /* AetherEngineTraits in Frameworks */,
 				BAC8382FD5504F2304388AEC /* libass in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -312,6 +314,7 @@
 			packageProductDependencies = (
 				78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */,
 				6D721BEED7BBECEDC71E22BC /* AetherEngine */,
+				A7E1C0DE5EED0001AE7B0002 /* AetherEngineTraits */,
 				21E4756219CF9B3C28F53FC9 /* libass */,
 			);
 			productName = Runner;
@@ -360,6 +363,7 @@
 			mainGroup = 33CC10E42044A3C60003C045;
 			packageReferences = (
 				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "FlutterGeneratedPluginSwiftPackage" */,
+				A7E1C0DE5EED0001AE7B0003 /* XCLocalSwiftPackageReference "AetherEngineTraits" */,
 				6A68EA299899E01512917019 /* XCRemoteSwiftPackageReference "AetherEngine" */,
 				755057A94BFFB3D132856F38 /* XCRemoteSwiftPackageReference "libass-build" */,
 			);
@@ -897,6 +901,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage;
 		};
+		A7E1C0DE5EED0001AE7B0003 /* XCLocalSwiftPackageReference "AetherEngineTraits" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = AetherEngineTraits;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -907,11 +915,6 @@
 				kind = revision;
 				revision = 93a024a5b72a735c996ca289e7dc0ed8d09dc787;
 			};
-			traits = (
-				TrueHDObjectAudio,
-				DTSXObjectAudio,
-				DualLayerDolbyVision,
-			);
 		};
 		755057A94BFFB3D132856F38 /* XCRemoteSwiftPackageReference "libass-build" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -937,6 +940,11 @@
 		78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FlutterGeneratedPluginSwiftPackage;
+		};
+		A7E1C0DE5EED0001AE7B0002 /* AetherEngineTraits */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A7E1C0DE5EED0001AE7B0003 /* XCLocalSwiftPackageReference "AetherEngineTraits" */;
+			productName = AetherEngineTraits;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

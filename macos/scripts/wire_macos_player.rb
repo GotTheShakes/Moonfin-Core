@@ -158,6 +158,34 @@ unless target.package_product_dependencies.any? { |d| d.product_name == 'libass'
   puts 'linked libass product'
 end
 
+# --- AetherEngine optional components ---
+# The engine's object audio (TrueHD Atmos and DTS:X heights) and its Dolby
+# Vision Profile 7 FEL route compile only with their package traits. Xcode 26
+# ignores a traits list on the .pbxproj package reference, so the traits are
+# set in a local package, macos/AetherEngineTraits, that depends on the same
+# engine revision. Linking it makes SwiftPM build the engine with them.
+traits_pkg = project.root_object.package_references.find do |p|
+  p.is_a?(Xcodeproj::Project::Object::XCLocalSwiftPackageReference) &&
+    p.relative_path.to_s == 'AetherEngineTraits'
+end
+unless traits_pkg
+  traits_pkg = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
+  traits_pkg.relative_path = 'AetherEngineTraits'
+  project.root_object.package_references << traits_pkg
+  puts 'added AetherEngineTraits package reference'
+end
+
+unless target.package_product_dependencies.any? { |d| d.product_name == 'AetherEngineTraits' }
+  dep = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
+  dep.package = traits_pkg
+  dep.product_name = 'AetherEngineTraits'
+  target.package_product_dependencies << dep
+  bf = project.new(Xcodeproj::Project::Object::PBXBuildFile)
+  bf.product_ref = dep
+  target.frameworks_build_phase.files << bf
+  puts 'linked AetherEngineTraits product'
+end
+
 # AetherEngine declares macOS 15 as its floor and SPM enforces it.
 target.build_configurations.each do |config|
   config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '15.0'
@@ -170,26 +198,3 @@ end
 project.save
 puts 'saved project'
 
-# AetherEngine's object audio (TrueHD Atmos and DTS:X heights) and its Dolby
-# Vision Profile 7 FEL dual-layer route are compiled in only when their package
-# traits are on, and they are off by default. The
-# xcodeproj gem does not model the `traits` key, so write it into the saved
-# project the way Xcode stores it. Idempotent.
-aether_traits = %w[TrueHDObjectAudio DTSXObjectAudio DualLayerDolbyVision]
-pbx_path = File.join(project_path, 'project.pbxproj')
-pbx = File.read(pbx_path)
-block = /(\/\* XCRemoteSwiftPackageReference "AetherEngine" \*\/ = \{\n(?:\t\t\t.*\n)*?)(\t\t\};)/
-entry = "\t\t\ttraits = (\n" + aether_traits.map { |t| "\t\t\t\t#{t},\n" }.join + "\t\t\t);\n"
-if pbx =~ block
-  head, tail = $1, $2
-  if head.include?(entry)
-    puts 'AetherEngine traits already present'
-  else
-    # Replace an older traits list, or add one.
-    head = head.sub(/\t\t\ttraits = \(\n(?:\t\t\t\t.*\n)*?\t\t\t\);\n/, '')
-    File.write(pbx_path, pbx.sub(block) { "#{head}#{entry}#{tail}" })
-    puts "wrote AetherEngine traits: #{aether_traits.join(', ')}"
-  end
-elsif !use_local_aether
-  abort 'AetherEngine package reference not found, traits not written'
-end

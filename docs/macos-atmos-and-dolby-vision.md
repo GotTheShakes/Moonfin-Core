@@ -8,7 +8,7 @@ open.
 
 | Setting | Location | Default |
 | --- | --- | --- |
-| Height channels from TrueHD and DTS:X | Settings, Playback, Audio, directly below "Downmix to Stereo" | On |
+| Height channels from TrueHD Atmos | Settings, Playback, Audio, directly below "Downmix to Stereo" | On |
 | Compose Dolby Vision on this display | Settings, Playback, Player (listed under the Video heading), in "Media Player Behavior" below the zoom mode | Off |
 | Play Dolby Vision FEL layers | Same place, directly below "Compose Dolby Vision" | Off |
 

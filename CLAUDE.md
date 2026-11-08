@@ -63,6 +63,14 @@ after pushing if a hook complains about unpushed commits.
 
 ## Open items
 
+- **Confirmed by the owner (run 42527709861, branch `aether-fel`):** the log
+  showed `optional components built in: TrueHDObjectAudio=true
+  DTSXObjectAudio=false DualLayerDolbyVision=true` and, on a Profile 7 FEL
+  title, `DV P7 dual-layer route: taken (el_type=FEL, 3840x2160@23.976, budget
+  80%)`. Picture, smoothness and audible heights not yet judged. The owner does
+  not care about DTS:X heights, so the Xcode 27 experiment to restore
+  `DTSXObjectAudio` is dropped. The height setting is now titled for TrueHD
+  Atmos only.
 - **FEL / dual-layer Dolby Vision** (branch `aether-fel`, off `aether-atmos-dv`).
   Adds the `DualLayerDolbyVision` trait and a default-off macOS setting,
   `UserPreferences.aetherDualLayerDolbyVision` ("Play Dolby Vision FEL layers",

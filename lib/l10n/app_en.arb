@@ -5563,11 +5563,11 @@
   "settingsAudioPassthroughOutputIec": "App packer (AudioTrack IEC)",
   "settingsAudioPassthroughOutputIecLabel": "App (IEC)",
   "settingsDownmixToStereoDescription": "Mix all decoded audio down to two channels.",
-  "settingsHeightChannelsTitle": "Height channels from TrueHD and DTS:X",
+  "settingsHeightChannelsTitle": "Height channels from TrueHD Atmos",
   "@settingsHeightChannelsTitle": {
-    "description": "macOS audio option: keep the height channels of TrueHD Atmos and DTS:X tracks"
+    "description": "macOS audio option: keep the height channels of TrueHD Atmos tracks"
   },
-  "settingsHeightChannelsDescription": "Keeps the height channels of TrueHD and DTS:X tracks and plays them as spatial audio. Lossless, except over AirPlay. Applies to the next file you open.",
+  "settingsHeightChannelsDescription": "Keeps the height channels of TrueHD Atmos tracks and plays them as spatial audio. Lossless, except over AirPlay. Applies to the next file you open.",
   "settingsComposeDolbyVisionTitle": "Compose Dolby Vision on this display",
   "@settingsComposeDolbyVisionTitle": {
     "description": "macOS video option: hand Dolby Vision composition to AVPlayer"

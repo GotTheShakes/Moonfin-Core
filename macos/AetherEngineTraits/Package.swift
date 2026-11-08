@@ -5,10 +5,10 @@ import PackageDescription
 // Turns on AetherEngine's optional components for the macOS app.
 //
 // Xcode 26 ignores a `traits` list on a package reference in the .pbxproj, and
-// xcodebuild has no flag for a package's traits, so the Runner target also
-// links this package, which depends on the same engine revision with the
-// traits set. SwiftPM enables the union of the traits every dependent asks
-// for, so the engine the Runner already links is built with them. This is the
+// xcodebuild has no flag for a package's traits, so the Runner target links
+// the engine only through this package, which pins the revision with the
+// traits set and re-exports AetherEngine. A direct engine reference beside it
+// breaks package resolution. This is the
 // engine's documented route for an Xcode project (README, Optional components;
 // Probes/AllTraits). Keep the URL and revision in step with
 // macos/scripts/wire_macos_player.rb.

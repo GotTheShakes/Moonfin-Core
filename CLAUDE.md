@@ -29,8 +29,12 @@ after pushing if a hook complains about unpushed commits.
 1. **Atmos / DTS:X heights on macOS.** With the setting on,
    `LoadOptions.objectAudioRendering` is `.render(.l916)`. The engine traits
    (`TrueHDObjectAudio`, `DTSXObjectAudio`, `DualLayerDolbyVision`) are set in
-   the local package `macos/AetherEngineTraits`, which the Runner target links
-   (added by `macos/scripts/wire_macos_player.rb` if missing). Builds before
+   the local package `macos/AetherEngineTraits`, which pins the engine revision
+   and is the Runner target's ONLY link to the engine (it re-exports
+   `AetherEngine`). Keeping a direct remote AetherEngine reference beside it
+   made package resolution fail (run 42525399618, "binary target ... could not
+   be mapped to an artifact"). `wire_macos_player.rb` removes a direct
+   reference and adds the package; the revision now lives in its Package.swift. Builds before
    that package (up to run 42518227984) had NO traits: Xcode 26.3 ignores a
    `traits` list on a `.pbxproj` package reference, and LibTrueHD was absent
    from `Package.resolved`. The FEL log said `built without the

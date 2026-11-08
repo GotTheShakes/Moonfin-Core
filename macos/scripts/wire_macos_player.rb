@@ -71,12 +71,17 @@ if use_local_aether && !File.directory?(aether_local_path)
   abort("AETHER_LOCAL=1 but no checkout at #{aether_local_path}")
 end
 
+# By default the Runner reaches the engine through the local package
+# macos/AetherEngineTraits (wired below), which pins the revision and turns on
+# the engine's optional components. A second, direct reference to the same
+# package beside it makes Xcode's package resolution fail, so remove any.
+# AETHER_LOCAL=1 links the sibling checkout directly instead (no traits).
 project.root_object.package_references.dup.each do |p|
   is_remote_aether = p.respond_to?(:repositoryURL) &&
                      File.basename(p.repositoryURL.to_s.chomp('/'), '.git') == 'AetherEngine'
   is_local_aether = p.is_a?(Xcodeproj::Project::Object::XCLocalSwiftPackageReference) &&
                     File.basename(p.relative_path.to_s) == 'AetherEngine'
-  next unless (is_remote_aether && use_local_aether) || (is_local_aether && !use_local_aether)
+  next unless is_remote_aether || (is_local_aether && !use_local_aether)
   target.package_product_dependencies.dup.each do |d|
     next unless d.package&.uuid == p.uuid
     d.referrers.grep(Xcodeproj::Project::Object::PBXBuildFile).each(&:remove_from_project)
@@ -85,53 +90,36 @@ project.root_object.package_references.dup.each do |p|
   end
   project.root_object.package_references.delete(p)
   p.remove_from_project
-  puts 'removed stale AetherEngine package reference'
+  puts 'removed direct AetherEngine package reference'
 end
 
-# Match on the repository name rather than the whole url. A url that does not
-# match adds a second reference for the same product, and the project then
-# fails to resolve.
-aether_pkg = project.root_object.package_references.find do |p|
-  (p.respond_to?(:repositoryURL) &&
-   File.basename(p.repositoryURL.to_s.chomp('/'), '.git') == 'AetherEngine') ||
-    (p.is_a?(Xcodeproj::Project::Object::XCLocalSwiftPackageReference) &&
-     File.basename(p.relative_path.to_s) == 'AetherEngine')
-end
-unless aether_pkg
-  if use_local_aether
+if use_local_aether
+  aether_pkg = project.root_object.package_references.find do |p|
+    p.is_a?(Xcodeproj::Project::Object::XCLocalSwiftPackageReference) &&
+      File.basename(p.relative_path.to_s) == 'AetherEngine'
+  end
+  unless aether_pkg
     aether_pkg = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
     aether_pkg.relative_path = aether_local_path
+    project.root_object.package_references << aether_pkg
     puts "added AetherEngine local package reference (#{aether_local_path})"
-  else
-    aether_pkg = project.new(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference)
-    aether_pkg.repositoryURL = aether_remote_url
-    aether_pkg.requirement = { 'kind' => 'revision', 'revision' => aether_revision }
-    puts "added AetherEngine remote package reference (#{aether_revision})"
   end
-  project.root_object.package_references << aether_pkg
-end
-
-# A reference that is already there keeps whatever it was written with, so an
-# engine bump would land in this script and nowhere else. Reconcile it, which
-# also makes running this twice a no-op.
-if !use_local_aether &&
-   aether_pkg.is_a?(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference) &&
-   (aether_pkg.repositoryURL != aether_remote_url ||
-    aether_pkg.requirement != { 'kind' => 'revision', 'revision' => aether_revision })
-  aether_pkg.repositoryURL = aether_remote_url
-  aether_pkg.requirement = { 'kind' => 'revision', 'revision' => aether_revision }
-  puts "repointed AetherEngine at #{aether_remote_url} #{aether_revision}"
-end
-
-unless target.package_product_dependencies.any? { |d| d.product_name == 'AetherEngine' }
-  dep = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
-  dep.package = aether_pkg
-  dep.product_name = 'AetherEngine'
-  target.package_product_dependencies << dep
-  bf = project.new(Xcodeproj::Project::Object::PBXBuildFile)
-  bf.product_ref = dep
-  target.frameworks_build_phase.files << bf
-  puts 'linked AetherEngine product'
+  unless target.package_product_dependencies.any? { |d| d.product_name == 'AetherEngine' }
+    dep = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
+    dep.package = aether_pkg
+    dep.product_name = 'AetherEngine'
+    target.package_product_dependencies << dep
+    bf = project.new(Xcodeproj::Project::Object::PBXBuildFile)
+    bf.product_ref = dep
+    target.frameworks_build_phase.files << bf
+    puts 'linked AetherEngine product'
+  end
+else
+  # The engine URL and revision live in the traits package's manifest.
+  manifest = File.read(File.join(project_dir, 'AetherEngineTraits', 'Package.swift'))
+  unless manifest.include?(aether_remote_url) && manifest.include?(aether_revision)
+    abort "macos/AetherEngineTraits/Package.swift is not pinned to #{aether_remote_url} #{aether_revision}"
+  end
 end
 
 # --- libass (standalone, for host-side ASS subtitle rendering) ---
@@ -168,14 +156,29 @@ traits_pkg = project.root_object.package_references.find do |p|
   p.is_a?(Xcodeproj::Project::Object::XCLocalSwiftPackageReference) &&
     p.relative_path.to_s == 'AetherEngineTraits'
 end
-unless traits_pkg
+if use_local_aether
+  # The sibling checkout is linked directly; this package would add a second
+  # path to the engine.
+  if traits_pkg
+    target.package_product_dependencies.dup.each do |d|
+      next unless d.package&.uuid == traits_pkg.uuid
+      d.referrers.grep(Xcodeproj::Project::Object::PBXBuildFile).each(&:remove_from_project)
+      target.package_product_dependencies.delete(d)
+      d.remove_from_project
+    end
+    project.root_object.package_references.delete(traits_pkg)
+    traits_pkg.remove_from_project
+    puts 'removed AetherEngineTraits package reference (AETHER_LOCAL=1)'
+  end
+elsif !traits_pkg
   traits_pkg = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
   traits_pkg.relative_path = 'AetherEngineTraits'
   project.root_object.package_references << traits_pkg
   puts 'added AetherEngineTraits package reference'
 end
 
-unless target.package_product_dependencies.any? { |d| d.product_name == 'AetherEngineTraits' }
+if !use_local_aether &&
+   target.package_product_dependencies.none? { |d| d.product_name == 'AetherEngineTraits' }
   dep = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
   dep.package = traits_pkg
   dep.product_name = 'AetherEngineTraits'

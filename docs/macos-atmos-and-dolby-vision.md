@@ -37,12 +37,12 @@ Both appear on macOS only.
 
 - `macos/AetherEngineTraits/`: a small local Swift package that depends on the
   same AetherEngine revision with the `TrueHDObjectAudio`, `DTSXObjectAudio`
-  and `DualLayerDolbyVision` traits on. The Runner target links it, so the
-  engine is built with them. Without them the object audio and FEL code is not
+  and `DualLayerDolbyVision` traits on. It is the Runner target's only link to
+  the engine (it re-exports `AetherEngine`), so the engine is built with them. Without them the object audio and FEL code is not
   compiled in. (A `traits` list on the package reference in the `.pbxproj` is
   ignored by Xcode 26, which CI uses, so the first builds had none of them.)
-- `macos/scripts/wire_macos_player.rb`: adds that package to the project if it
-  is missing.
+- `macos/scripts/wire_macos_player.rb`: adds that package and removes any direct
+  AetherEngine reference, which next to it breaks package resolution.
 - `lib/preference/user_preferences.dart`, `lib/playback/aether_backend.dart`,
   the two settings screens, and `app_en.arb`: the two preferences and tiles.
   Only the English strings are added.

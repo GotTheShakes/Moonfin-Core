@@ -9,7 +9,7 @@ open.
 | Setting | Location | Default |
 | --- | --- | --- |
 | Height channels from TrueHD and DTS:X | Settings, Playback, Audio, directly below "Downmix to Stereo" | On |
-| Compose Dolby Vision on this display | Settings, Playback, Video, below the zoom mode | Off |
+| Compose Dolby Vision on this display | Settings, Playback, Player (listed under the Video heading), in "Media Player Behavior" below the zoom mode | Off |
 
 Both appear on macOS only.
 

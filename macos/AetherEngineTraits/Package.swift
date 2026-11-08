@@ -22,7 +22,12 @@ let package = Package(
         .package(
             url: "https://github.com/RadicalMuffinMan/AetherEngine",
             revision: "93a024a5b72a735c996ca289e7dc0ed8d09dc787",
-            traits: ["TrueHDObjectAudio", "DTSXObjectAudio", "DualLayerDolbyVision"]
+            // DTSXObjectAudio is left out: at this revision its decoder fails to
+            // compile with Xcode 26.3's Swift ("sending value of non-Sendable type
+            // '() async -> DTSXObjectAudioDecoder.Verdict?'" in
+            // SoftwarePlaybackHost+AudioProducer.swift). Add it back once CI builds
+            // with Xcode 27. DTS:X tracks still play, as their 7.1 bed.
+            traits: ["TrueHDObjectAudio", "DualLayerDolbyVision"]
         ),
     ],
     targets: [

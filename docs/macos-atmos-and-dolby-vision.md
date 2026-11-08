@@ -36,8 +36,10 @@ Both appear on macOS only.
 ## What was changed
 
 - `macos/AetherEngineTraits/`: a small local Swift package that depends on the
-  same AetherEngine revision with the `TrueHDObjectAudio`, `DTSXObjectAudio`
-  and `DualLayerDolbyVision` traits on. It is the Runner target's only link to
+  same AetherEngine revision with the `TrueHDObjectAudio` and
+  `DualLayerDolbyVision` traits on. `DTSXObjectAudio` is left out for now: its
+  decoder does not compile with Xcode 26.3, which CI uses, so DTS:X tracks play
+  without their heights. It is the Runner target's only link to
   the engine (it re-exports `AetherEngine`), so the engine is built with them. Without them the object audio and FEL code is not
   compiled in. (A `traits` list on the package reference in the `.pbxproj` is
   ignored by Xcode 26, which CI uses, so the first builds had none of them.)
@@ -57,7 +59,7 @@ Playing any file logs which components the build has:
 
     log stream --level debug --predicate 'subsystem == "de.superuser404.AetherEngine"' | grep -E "optional components|dual-layer|AE#455"
 
-Look for `optional components built in: TrueHDObjectAudio=true DTSXObjectAudio=true DualLayerDolbyVision=true ...`.
+Look for `optional components built in: TrueHDObjectAudio=true DTSXObjectAudio=false DualLayerDolbyVision=true ...`.
 
 ## Limits
 

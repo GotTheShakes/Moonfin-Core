@@ -28,7 +28,8 @@ after pushing if a hook complains about unpushed commits.
 
 1. **Atmos / DTS:X heights on macOS.** With the setting on,
    `LoadOptions.objectAudioRendering` is `.render(.l916)`. The engine traits
-   (`TrueHDObjectAudio`, `DTSXObjectAudio`, `DualLayerDolbyVision`) are set in
+   (`TrueHDObjectAudio`, `DualLayerDolbyVision`; `DTSXObjectAudio` is left out
+   because it fails to compile under Xcode 26.3, run 42526273238) are set in
    the local package `macos/AetherEngineTraits`, which pins the engine revision
    and is the Runner target's ONLY link to the engine (it re-exports
    `AetherEngine`). Keeping a direct remote AetherEngine reference beside it

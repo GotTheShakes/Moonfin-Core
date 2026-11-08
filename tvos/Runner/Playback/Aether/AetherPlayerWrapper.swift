@@ -914,6 +914,8 @@ final class AetherPlayerWrapper: NSObject, ObservableObject {
         var heightChannels = false
         /// macOS: hand Dolby Vision composition to AVPlayer.
         var composeDolbyVision = false
+        /// macOS: decode both layers of a Profile 7 FEL source.
+        var dualLayerDolbyVision = false
 
         /// Sidecars the host wants listed. They ride the load rather than
         /// arriving after it, because the engine clears its external registry
@@ -1189,6 +1191,18 @@ final class AetherPlayerWrapper: NSObject, ObservableObject {
                 !sourceConfiguration.dolbyVisionBaseLayerOnly
             {
                 options.forceDolbyVisionOnNonDVDisplay = true
+            }
+            // Profile 7 FEL: decode the base and enhancement layers in hardware
+            // and compose them on Metal (the engine's software host), instead of
+            // the single-layer 8.1 conversion that drops the enhancement layer.
+            // Needs the DualLayerDolbyVision package trait (written by
+            // wire_macos_player.rb). The engine keeps the native route for MEL,
+            // non-Profile 7, non-seekable, or over-budget sources and logs which
+            // route it took. Ignored when the source needs the base layer only.
+            if sourceConfiguration.dualLayerDolbyVision,
+                !sourceConfiguration.dolbyVisionBaseLayerOnly
+            {
+                options.preferDualLayerDolbyVision = true
             }
         #endif
 

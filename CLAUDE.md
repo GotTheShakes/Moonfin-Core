@@ -54,15 +54,20 @@ after pushing if a hook complains about unpushed commits.
 
 ## Open items
 
-- **FEL / dual-layer Dolby Vision.** The owner has Profile 7 FEL files and wants
-  them handled. Not enabled: the `DualLayerDolbyVision` trait and
-  `LoadOptions.preferDualLayerDolbyVision`. AetherPlayer does not use them either
-  (it sets only `forceDolbyVisionOnNonDVDisplay`). Add them as separate,
-  default-off settings so a bad result is easy to undo. Read the engine's
-  `Package.swift` and `PlayerState.swift` (fork pinned at revision
-  93a024a5b72a735c996ca289e7dc0ed8d09dc787, engine 7.50.0) for what they do on
-  macOS. The engine dev said the FEL fold only matters with Dolby Vision
-  composition on.
+- **FEL / dual-layer Dolby Vision** (branch `aether-fel`, off `aether-atmos-dv`).
+  Adds the `DualLayerDolbyVision` trait and a default-off macOS setting,
+  `UserPreferences.aetherDualLayerDolbyVision` ("Play Dolby Vision FEL layers",
+  below Compose), passed as `dualLayerDolbyVision` and applied as
+  `LoadOptions.preferDualLayerDolbyVision`. Engine docs
+  (`docs/dolby-vision-fel.md` at the pinned revision) say the composed picture is
+  correct on macOS but that macOS applying the attached per-frame metadata is
+  unmeasured (proven on tvOS only). The route runs on the software host; with
+  `objectAudioRendering` set it keeps Atmos objects (verified on macOS). Confirm
+  the route from the unified log (subsystem `de.superuser404.AetherEngine`, look
+  for `DV P7 dual-layer route`). Needs the owner's judgement on a real file.
+- The owner already confirmed (log) that Compose Dolby Vision engages on a
+  Profile 7 file: `AE#455: serving HEVC DV Profile 7 (converted to 8.1) as
+  Profile 5`. Plex direct played it. They saw no visible difference.
 - **`DolbyVisionStillReshaping` trait.** AetherPlayer enables it, this fork does
   not. Find out what it changes before adding.
 - Whether Plex direct plays TrueHD on macOS depends on Moonfin's Plex device

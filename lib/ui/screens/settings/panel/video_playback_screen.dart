@@ -81,6 +81,13 @@ class _VideoPlaybackScreen extends StatelessWidget {
                   subtitle: l10n.settingsComposeDolbyVisionDescription,
                   icon: Icons.hdr_on,
                 ),
+              if (PlatformDetection.isMacOS)
+                SwitchPreferenceTile(
+                  preference: UserPreferences.aetherDualLayerDolbyVision,
+                  title: l10n.settingsDualLayerDolbyVisionTitle,
+                  subtitle: l10n.settingsDualLayerDolbyVisionDescription,
+                  icon: Icons.layers,
+                ),
               if (letterboxCropSettingVisible()) ...[
                 SwitchPreferenceTile(
                   preference: UserPreferences.cropBlackBars,

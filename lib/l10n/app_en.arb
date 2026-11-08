@@ -5573,6 +5573,11 @@
     "description": "macOS video option: hand Dolby Vision composition to AVPlayer"
   },
   "settingsComposeDolbyVisionDescription": "Experimental. No Mac reports a Dolby Vision display, so a Profile 8.1 source plays as its HDR10 base layer and the per-frame metadata is discarded. This hands the composition to AVPlayer instead. On a display without the headroom for it, expect a shifted or washed-out picture; turn it back off and reopen the file. Applies to the next file you open.",
+  "settingsDualLayerDolbyVisionTitle": "Play Dolby Vision FEL layers",
+  "@settingsDualLayerDolbyVisionTitle": {
+    "description": "macOS video option: decode the full enhancement layer of Dolby Vision Profile 7 FEL sources"
+  },
+  "settingsDualLayerDolbyVisionDescription": "Experimental. A Profile 7 FEL source, as on many 4K Blu-ray remuxes, normally loses its enhancement layer. This decodes both layers and combines them on the graphics chip. Uses more power, and the Mac may run warmer. Files without an FEL play as before. Applies to the next file you open.",
   "settingsAudioEac3IncludesAtmos": "Bitstream E-AC-3, including Dolby Atmos (JOC).",
   "settingsAudioDtsHdIncludesDtsX": "Bitstream DTS-HD, including DTS:X.",
   "settingsAudioTrueHdIncludesAtmos": "Bitstream TrueHD, including Dolby Atmos.",

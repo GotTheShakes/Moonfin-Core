@@ -910,6 +910,7 @@
 			traits = (
 				TrueHDObjectAudio,
 				DTSXObjectAudio,
+				DualLayerDolbyVision,
 			);
 		};
 		755057A94BFFB3D132856F38 /* XCRemoteSwiftPackageReference "libass-build" */ = {

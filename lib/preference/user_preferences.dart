@@ -2669,6 +2669,14 @@ class UserPreferences extends ChangeNotifier {
     defaultValue: false,
   );
 
+  /// macOS, Aether engine: decode both layers of a Dolby Vision Profile 7 FEL
+  /// source and compose them on the GPU, instead of dropping the enhancement
+  /// layer. Experimental.
+  static final aetherDualLayerDolbyVision = Preference(
+    key: 'pref_aether_dual_layer_dolby_vision',
+    defaultValue: false,
+  );
+
   /// One-time flag: the old preset, output mode, and variant toggles have been
   /// folded into [audioPassthroughMode], [downmixToStereo], and the five base
   /// toggles.

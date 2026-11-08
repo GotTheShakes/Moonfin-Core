@@ -10,6 +10,7 @@ open.
 | --- | --- | --- |
 | Height channels from TrueHD and DTS:X | Settings, Playback, Audio, directly below "Downmix to Stereo" | On |
 | Compose Dolby Vision on this display | Settings, Playback, Player (listed under the Video heading), in "Media Player Behavior" below the zoom mode | Off |
+| Play Dolby Vision FEL layers | Same place, directly below "Compose Dolby Vision" | Off |
 
 Both appear on macOS only.
 
@@ -23,12 +24,20 @@ Both appear on macOS only.
   sources normally play as their HDR10 base layer. This hands composition to
   AVPlayer. Experimental. If the picture looks shifted or washed out, turn it
   off and reopen the file.
+- **Play Dolby Vision FEL layers.** A Profile 7 FEL source normally loses its
+  enhancement layer when it is converted to Profile 8.1. This decodes both
+  layers in hardware and combines them on the GPU (the engine's
+  `preferDualLayerDolbyVision`, built with the `DualLayerDolbyVision` trait).
+  The engine documents the combined picture as correct on macOS; whether macOS
+  then applies the attached per-frame Dolby Vision metadata is unmeasured.
+  Experimental. A Profile 7 MEL file, or one too heavy to decode twice in real
+  time, keeps the normal route.
 
 ## What was changed
 
 - `macos/Runner.xcodeproj/project.pbxproj`: AetherEngine package traits
-  `TrueHDObjectAudio` and `DTSXObjectAudio`. Without them the object audio code
-  is not compiled in.
+  `TrueHDObjectAudio`, `DTSXObjectAudio` and `DualLayerDolbyVision`. Without them
+  the object audio and FEL code is not compiled in.
 - `macos/scripts/wire_macos_player.rb`: writes those traits back after the
   script saves the project, because the `xcodeproj` gem drops them.
 - `lib/preference/user_preferences.dart`, `lib/playback/aether_backend.dart`,

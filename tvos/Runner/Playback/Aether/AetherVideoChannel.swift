@@ -241,6 +241,7 @@ final class AetherVideoChannel: NSObject, FlutterStreamHandler {
                 dolbyVisionBaseLayerOnly: (args["dolbyVisionBaseLayerOnly"] as? Bool) ?? false,
                 heightChannels: (args["heightChannels"] as? Bool) ?? false,
                 composeDolbyVision: (args["composeDolbyVision"] as? Bool) ?? false,
+                dualLayerDolbyVision: (args["dualLayerDolbyVision"] as? Bool) ?? false,
                 externalSubtitles: AetherPlayerWrapper.externalSubtitleTracks(
                     from: args["externalSubtitles"]),
                 subtitleDelay: ((args["subtitleDelayMs"] as? NSNumber)?.doubleValue ?? 0) / 1000,

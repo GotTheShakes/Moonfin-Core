@@ -170,20 +170,24 @@ end
 project.save
 puts 'saved project'
 
-# AetherEngine's object audio (TrueHD Atmos and DTS:X heights) is compiled in
-# only when its package traits are on, and they are off by default. The
+# AetherEngine's object audio (TrueHD Atmos and DTS:X heights) and its Dolby
+# Vision Profile 7 FEL dual-layer route are compiled in only when their package
+# traits are on, and they are off by default. The
 # xcodeproj gem does not model the `traits` key, so write it into the saved
 # project the way Xcode stores it. Idempotent.
-aether_traits = %w[TrueHDObjectAudio DTSXObjectAudio]
+aether_traits = %w[TrueHDObjectAudio DTSXObjectAudio DualLayerDolbyVision]
 pbx_path = File.join(project_path, 'project.pbxproj')
 pbx = File.read(pbx_path)
 block = /(\/\* XCRemoteSwiftPackageReference "AetherEngine" \*\/ = \{\n(?:\t\t\t.*\n)*?)(\t\t\};)/
+entry = "\t\t\ttraits = (\n" + aether_traits.map { |t| "\t\t\t\t#{t},\n" }.join + "\t\t\t);\n"
 if pbx =~ block
-  if $1.include?("\t\t\ttraits = (")
+  head, tail = $1, $2
+  if head.include?(entry)
     puts 'AetherEngine traits already present'
   else
-    entry = "\t\t\ttraits = (\n" + aether_traits.map { |t| "\t\t\t\t#{t},\n" }.join + "\t\t\t);\n"
-    File.write(pbx_path, pbx.sub(block) { "#{$1}#{entry}#{$2}" })
+    # Replace an older traits list, or add one.
+    head = head.sub(/\t\t\ttraits = \(\n(?:\t\t\t\t.*\n)*?\t\t\t\);\n/, '')
+    File.write(pbx_path, pbx.sub(block) { "#{head}#{entry}#{tail}" })
     puts "wrote AetherEngine traits: #{aether_traits.join(', ')}"
   end
 elsif !use_local_aether

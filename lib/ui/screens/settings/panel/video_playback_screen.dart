@@ -74,6 +74,13 @@ class _VideoPlaybackScreen extends StatelessWidget {
                   subtitle: l10n.keepVideoClearOfDynamicIslandDescription,
                   icon: Icons.crop_free,
                 ),
+              if (PlatformDetection.isMacOS)
+                SwitchPreferenceTile(
+                  preference: UserPreferences.aetherComposeDolbyVision,
+                  title: l10n.settingsComposeDolbyVisionTitle,
+                  subtitle: l10n.settingsComposeDolbyVisionDescription,
+                  icon: Icons.hdr_on,
+                ),
               if (letterboxCropSettingVisible()) ...[
                 SwitchPreferenceTile(
                   preference: UserPreferences.cropBlackBars,

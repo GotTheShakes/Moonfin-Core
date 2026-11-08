@@ -337,6 +337,13 @@ class _AudioPreferencesScreenState extends State<_AudioPreferencesScreen> {
                   subtitle: l10n.settingsDownmixToStereoDescription,
                   icon: Icons.speaker,
                 ),
+                if (PlatformDetection.isMacOS)
+                  SwitchPreferenceTile(
+                    preference: UserPreferences.aetherHeightChannels,
+                    title: l10n.settingsHeightChannelsTitle,
+                    subtitle: l10n.settingsHeightChannelsDescription,
+                    icon: Icons.spatial_audio_off,
+                  ),
               ],
             ),
             if (isManual && _showPassthroughToggles) ...[

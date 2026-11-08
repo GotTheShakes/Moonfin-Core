@@ -2655,6 +2655,20 @@ class UserPreferences extends ChangeNotifier {
     defaultValue: false,
   );
 
+  /// macOS, Aether engine: keep the height channels of TrueHD Atmos and DTS:X
+  /// tracks and play them as spatial audio.
+  static final aetherHeightChannels = Preference(
+    key: 'pref_aether_height_channels',
+    defaultValue: true,
+  );
+
+  /// macOS, Aether engine: compose Dolby Vision through AVPlayer although no
+  /// Mac reports a Dolby Vision display. Experimental.
+  static final aetherComposeDolbyVision = Preference(
+    key: 'pref_aether_compose_dolby_vision',
+    defaultValue: false,
+  );
+
   /// One-time flag: the old preset, output mode, and variant toggles have been
   /// folded into [audioPassthroughMode], [downmixToStereo], and the five base
   /// toggles.

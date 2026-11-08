@@ -910,6 +910,10 @@ final class AetherPlayerWrapper: NSObject, ObservableObject {
         var audioStreamIndex: Int32?
         var audioBridgeLossless = false
         var dolbyVisionBaseLayerOnly = false
+        /// macOS: keep TrueHD Atmos and DTS:X height channels.
+        var heightChannels = false
+        /// macOS: hand Dolby Vision composition to AVPlayer.
+        var composeDolbyVision = false
 
         /// Sidecars the host wants listed. They ride the load rather than
         /// arriving after it, because the engine clears its external registry
@@ -1165,28 +1169,24 @@ final class AetherPlayerWrapper: NSObject, ObservableObject {
             autoplay: sourceConfiguration.autoPlay
         )
         #if os(macOS)
-            // Extended Apple playback on the Mac, mirroring AetherPlayer. Both are
-            // read fresh on every open, so a change applies to the next file.
+            // Extended Apple playback on the Mac, mirroring AetherPlayer. Both come
+            // from Moonfin's playback settings and apply to the next file opened.
             //
             // Heights from TrueHD Atmos and DTS:X: the engine renders the objects
             // into a 9.1.6 bed and hands it to macOS as lossless PCM, which macOS
-            // plays as spatial audio. On by default; needs the TrueHDObjectAudio
-            // and DTSXObjectAudio package traits (built in by wire_macos_player.rb)
-            // and macOS 26. A track with no objects, or a build without the traits,
-            // falls back to audioBridgeMode above.
-            //   defaults write org.moonfin.app moonfin.aether.objectAudioHeights -bool false
-            let heightsDefault = UserDefaults.standard.object(
-                forKey: "moonfin.aether.objectAudioHeights") as? Bool
-            if heightsDefault ?? true {
+            // plays as spatial audio. Needs the TrueHDObjectAudio and DTSXObjectAudio
+            // package traits (written by wire_macos_player.rb) and macOS 26. A track
+            // with no objects, or a build without the traits, falls back to
+            // audioBridgeMode above.
+            if sourceConfiguration.heightChannels {
                 options.objectAudioRendering = .render(.l916)
             }
             // No Mac reports a Dolby Vision display, so Profile 8.1 and 7 play as
             // their HDR10 base layer and the per-frame metadata is discarded. This
-            // hands the composition to AVPlayer instead. Experimental, off by
-            // default. Ignored when Moonfin's own "base layer only" setting is on.
-            //   defaults write org.moonfin.app moonfin.aether.composeDolbyVision -bool true
-            if UserDefaults.standard.bool(forKey: "moonfin.aether.composeDolbyVision"),
-                sourceConfiguration.dolbyVisionBaseLayerOnly == false
+            // hands the composition to AVPlayer instead. Experimental. Ignored when
+            // the source needs the base layer only.
+            if sourceConfiguration.composeDolbyVision,
+                !sourceConfiguration.dolbyVisionBaseLayerOnly
             {
                 options.forceDolbyVisionOnNonDVDisplay = true
             }

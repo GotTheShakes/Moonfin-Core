@@ -5563,6 +5563,16 @@
   "settingsAudioPassthroughOutputIec": "App packer (AudioTrack IEC)",
   "settingsAudioPassthroughOutputIecLabel": "App (IEC)",
   "settingsDownmixToStereoDescription": "Mix all decoded audio down to two channels.",
+  "settingsHeightChannelsTitle": "Height channels from TrueHD and DTS:X",
+  "@settingsHeightChannelsTitle": {
+    "description": "macOS audio option: keep the height channels of TrueHD Atmos and DTS:X tracks"
+  },
+  "settingsHeightChannelsDescription": "Keeps the height channels of TrueHD and DTS:X tracks and plays them as spatial audio. Lossless, except over AirPlay. Applies to the next file you open.",
+  "settingsComposeDolbyVisionTitle": "Compose Dolby Vision on this display",
+  "@settingsComposeDolbyVisionTitle": {
+    "description": "macOS video option: hand Dolby Vision composition to AVPlayer"
+  },
+  "settingsComposeDolbyVisionDescription": "Experimental. No Mac reports a Dolby Vision display, so a Profile 8.1 source plays as its HDR10 base layer and the per-frame metadata is discarded. This hands the composition to AVPlayer instead. On a display without the headroom for it, expect a shifted or washed-out picture; turn it back off and reopen the file. Applies to the next file you open.",
   "settingsAudioEac3IncludesAtmos": "Bitstream E-AC-3, including Dolby Atmos (JOC).",
   "settingsAudioDtsHdIncludesDtsX": "Bitstream DTS-HD, including DTS:X.",
   "settingsAudioTrueHdIncludesAtmos": "Bitstream TrueHD, including Dolby Atmos.",

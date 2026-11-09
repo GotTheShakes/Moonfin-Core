@@ -2836,7 +2836,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     });
   }
 
-  Future<void> _exitPlayback() async {
+  /// [waitForBackKeyUp] is false when the exit comes from a click or tap on
+  /// the back button: there is no key to wait for, and the keyboard's pressed
+  /// keys can be stale on macOS (an Escape whose key up the system consumed,
+  /// e.g. leaving full screen), which left the player on a black screen until
+  /// Escape was pressed again.
+  Future<void> _exitPlayback({bool waitForBackKeyUp = true}) async {
     if (_isStopping) return;
     setState(() {
       _isStopping = true;
@@ -2861,7 +2866,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _cancelPopAfterBackKeyUp = runAfterBackKeyUp(_popPlayerRoute);
+        if (waitForBackKeyUp) {
+          _cancelPopAfterBackKeyUp = runAfterBackKeyUp(_popPlayerRoute);
+        } else {
+          _popPlayerRoute();
+        }
       });
     }
     unawaited(_manager.stop(userInitiated: false));
@@ -4912,7 +4921,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           children: [
             if (!PlatformDetection.useLeanbackUi && !PlatformDetection.isTV)
               IconButton(
-                onPressed: _exitPlayback,
+                onPressed: () => _exitPlayback(waitForBackKeyUp: false),
                 tooltip: PlatformDetection.useDesktopUi
                     ? _tooltipMessage(l10n.back, shortcut: 'Esc')
                     : null,

@@ -78,6 +78,14 @@ after pushing if a hook complains about unpushed commits.
 
 ## Open items
 
+- **Back arrow left a black screen until Escape** (upstream bug, fixed on
+  `aether-fel`, not yet confirmed by the owner). `_exitPlayback` pops through
+  `runAfterBackKeyUp`, which waits for a back key's key up when
+  `HardwareKeyboard` thinks one is pressed. On macOS that state can be stale
+  (an Escape whose key up the system consumed), so a mouse click on the back
+  arrow waited forever. The on-screen back button now passes
+  `waitForBackKeyUp: false`. Worth reporting upstream.
+
 - **Confirmed by the owner (run 42527709861, branch `aether-fel`):** the log
   showed `optional components built in: TrueHDObjectAudio=true
   DTSXObjectAudio=false DualLayerDolbyVision=true` and, on a Profile 7 FEL

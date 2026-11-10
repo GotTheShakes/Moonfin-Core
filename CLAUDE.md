@@ -100,7 +100,17 @@ after pushing if a hook complains about unpushed commits.
   showed `optional components built in: TrueHDObjectAudio=true
   DTSXObjectAudio=false DualLayerDolbyVision=true` and, on a Profile 7 FEL
   title, `DV P7 dual-layer route: taken (el_type=FEL, 3840x2160@23.976, budget
-  80%)`. Picture, smoothness and audible heights not yet judged. The owner does
+  80%)`. Picture, smoothness and audible heights not yet judged.
+  **Runtime proof (2026-11-09, same build, TrueHD Atmos FEL title):**
+  `FEL stream detected; engaging enhancement decoder`, `secondary decoder
+  initialized for the enhancement layer`, `totals: composed=` rising ~25/s
+  with every `bypass*` at 0 (no fallback frames). Audio: `[SpatialAudioBridge]
+  init: layout=9.1.6 format=lpcm ... codecs=ipcm`, `TrueHD Atmos rendered into
+  9.1.6 as PCM for the renderer`, `object configuration: LFE + 11 objects`,
+  `bed levels` with `2 elevated` objects and Ltm/Rtm at about -33 dBFS RMS
+  (peaks -6), so height content reaches the bed handed to macOS. Not provable
+  from the app: macOS spatialising the 16-channel PCM on AirPods (the engine
+  docs measured it on a MacBook Air, macOS 27). The owner does
   not care about DTS:X heights, so the Xcode 27 experiment to restore
   `DTSXObjectAudio` is dropped. The height setting is now titled for TrueHD
   Atmos only.

@@ -1269,6 +1269,25 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _toggleFelResidual(AetherBackend backend) async {
+    final enabled = await backend.toggleFelResidual();
+    if (!mounted || enabled == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          enabled
+              ? 'Dolby Vision FEL: on (full enhancement layer)'
+              : 'Dolby Vision FEL: off (base layer + RPU only)',
+        ),
+        duration: const Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+        width: 380,
+      ),
+    );
+  }
+
   void _showThrottledPlaybackError(String message) {
     final normalized = message.trim();
     if (normalized.isEmpty) {
@@ -3711,6 +3730,17 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     }
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
+    }
+
+    // macOS: E flips the Dolby Vision FEL enhancement layer on and off while a
+    // Profile 7 FEL title plays, for comparing the two on the same scene.
+    if (event.logicalKey == LogicalKeyboardKey.keyE &&
+        PlatformDetection.isMacOS) {
+      final backend = _activeBackend;
+      if (backend is AetherBackend) {
+        if (event is KeyDownEvent) unawaited(_toggleFelResidual(backend));
+        return KeyEventResult.handled;
+      }
     }
 
     if (PlatformDetection.isTV) {

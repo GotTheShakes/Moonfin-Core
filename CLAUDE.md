@@ -78,6 +78,14 @@ after pushing if a hook complains about unpushed commits.
 
 ## Open items
 
+- **FEL A/B key (macOS):** pressing **E** during playback flips
+  `AetherEngine.felResidualEnabled` (SPI `Diagnostics`, via
+  `toggleFelResidual` on the `moonfin/ios_aether_control` channel, handled
+  synchronously in `AetherVideoChannel.swift`) and shows a snackbar with the
+  new state. Off composes each frame without the enhancement layer's residual
+  (what MEL decodes to). Process-wide; reset to on at every `setSource`. Only
+  has an effect on the FEL dual-layer route. Needs the DualLayerDolbyVision
+  trait, so an `AETHER_LOCAL=1` build without it will not compile.
 - **Back arrow left a black screen until Escape** (upstream bug, fixed on
   `aether-fel`, not yet confirmed by the owner). `_exitPlayback` pops through
   `runAfterBackKeyUp`, which waits for a back key's key up when

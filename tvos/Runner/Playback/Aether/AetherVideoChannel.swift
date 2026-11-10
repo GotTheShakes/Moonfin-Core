@@ -1,5 +1,11 @@
 import AVFoundation
+#if os(macOS)
+// `felResidualEnabled`, for the macOS FEL A/B key. The macOS build always has
+// the DualLayerDolbyVision trait (macos/AetherEngineTraits).
+@_spi(Diagnostics) import AetherEngine
+#else
 import AetherEngine
+#endif
 import VideoToolbox
 #if canImport(Flutter)
 import Flutter
@@ -66,6 +72,19 @@ final class AetherVideoChannel: NSObject, FlutterStreamHandler {
                 #endif
                 return
             }
+            if call.method == "toggleFelResidual" {
+                // Flips the Profile 7 FEL residual for A/B viewing: off composes
+                // each frame without the enhancement layer's contribution (what
+                // a MEL stream decodes to). Takes effect from the next composed
+                // frame; returns the new state.
+                #if os(macOS)
+                    AetherEngine.felResidualEnabled.toggle()
+                    result(AetherEngine.felResidualEnabled)
+                #else
+                    result(nil)
+                #endif
+                return
+            }
             result(nil)
             Task { @MainActor in self?.handle(call) }
         }
@@ -102,6 +121,11 @@ final class AetherVideoChannel: NSObject, FlutterStreamHandler {
         let args = call.arguments as? [String: Any] ?? [:]
         switch call.method {
         case "setSource":
+            #if os(macOS)
+                // The residual switch is process-wide: a new source starts with
+                // the full FEL result, whatever the last A/B left it at.
+                AetherEngine.felResidualEnabled = true
+            #endif
             setSource(args)
         case "updateRequestHeaders":
             var headers: [String: String] = [:]

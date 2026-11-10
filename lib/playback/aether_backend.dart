@@ -121,6 +121,11 @@ class AetherBackend with SubtitleDelayState, AppleSecondarySubtitleControls
     'hasPrevious': true,
   });
 
+  /// macOS: flips the Dolby Vision Profile 7 FEL enhancement layer's
+  /// contribution on or off for A/B viewing (only on the FEL dual-layer
+  /// route). Returns the new state, or null where it does not apply.
+  Future<bool?> toggleFelResidual() => _invoke<bool>('toggleFelResidual');
+
   Future<T?> _invoke<T>(String method, [dynamic arguments]) async {
     if (_disposed) return null;
     try {

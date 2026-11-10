@@ -1,7 +1,9 @@
 # Context for this fork (GotTheShakes/Moonfin-Core)
 
 Personal fork of Moonfin-Core (Flutter media client). Work goes on the branch
-`aether-atmos-dv`; do not touch the upstream release flow. The owner plays Plex
+`aether-fel`, which builds the owner's DMG directly (no PRs; the owner asked
+for none). `aether-atmos-dv` is the older branch it grew from and is not kept
+up to date. Do not touch the upstream release flow. The owner plays Plex
 on a MacBook Pro (OLED) running macOS 27.3 beta, listens on AirPods Max with
 Spatial Audio, and installs the DMG this fork builds over the official app
 (same bundle id, `org.moonfin.app`). They are not a developer: explain in plain
@@ -11,7 +13,7 @@ words and give exact steps.
 
 The macOS job in `.github/workflows/build.yml` builds an ad-hoc signed DMG:
 
-    gh workflow run build.yml -R GotTheShakes/Moonfin-Core --ref aether-atmos-dv \
+    gh workflow run build.yml -R GotTheShakes/Moonfin-Core --ref aether-fel \
       -f run_all=false -f macos=true
 
 Then watch the run, and download the `macos-dmg` artifact from the run's page.
@@ -21,7 +23,7 @@ compiles. Audio and picture quality can only be judged by the owner, by ear and
 eye.
 
 On a fresh clone of the fork, remote-tracking refs may be missing, so run
-`git fetch origin +refs/heads/aether-atmos-dv:refs/remotes/origin/aether-atmos-dv`
+`git fetch origin +refs/heads/aether-fel:refs/remotes/origin/aether-fel`
 after pushing if a hook complains about unpushed commits.
 
 ## Pulling in upstream Moonfin

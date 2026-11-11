@@ -41,6 +41,12 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
+Last upstream sync: 2026-11-11, fork main at c7cb2587b (52 commits), merged
+into `aether-fel` as 75c578451; DMG run 42949011462 passed. The only conflict
+was `_exitPlayback` in `video_player_screen.dart`: keep both
+`waitForBackKeyUp` (fork) and `finished` (upstream credits skip). The fork's
+"Deploy Web To GitHub Pages" workflow is disabled (no Pages site on the fork).
+
 ## Done so far (see docs/macos-atmos-and-dolby-vision.md)
 
 1. **Atmos / DTS:X heights on macOS.** With the setting on,

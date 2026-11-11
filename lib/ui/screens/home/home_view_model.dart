@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState, WidgetsBinding;
 import 'package:get_it/get_it.dart';
+import 'package:jellyfin_preference/jellyfin_preference.dart';
 import 'package:server_core/server_core.dart';
 import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
@@ -76,9 +77,23 @@ class HomeViewModel extends ChangeNotifier {
   final TvChannelsService _tvChannels = TvChannelsService();
 
   List<HomeRow> _rows = [];
-  List<HomeRow> get rows => _emptySectionIds.isEmpty
-      ? _rows
-      : _rows.where((row) => !_isEmptySectionPlaceholder(row)).toList();
+  List<HomeRow> get rows {
+    final base = _emptySectionIds.isEmpty
+        ? _rows
+        : _rows.where((row) => !_isEmptySectionPlaceholder(row)).toList();
+    final party = _watchPartyRow;
+    return party == null ? base : [party, ...base];
+  }
+
+  /// The Watch Parties row, first while rooms exist. It isn't one of the
+  /// layout's sections, so it never reaches the row cache.
+  HomeRow? _watchPartyRow;
+
+  void setWatchPartyRow(HomeRow? row) {
+    if (identical(row, _watchPartyRow)) return;
+    _watchPartyRow = row;
+    notifyListeners();
+  }
 
   /// Placeholder ids of sections expected to come back empty, because their
   /// last load did or a cold start found nothing cached for them. Their
@@ -91,6 +106,8 @@ class HomeViewModel extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  Future<void> _loadDone = Future<void>.value();
+  Future<void> _bgMerge = Future<void>.value();
   bool _bgMergeInFlight = false;
   bool _bgResumeRefreshInFlight = false;
   bool _reloadRequestedWhileLoading = false;
@@ -397,6 +414,8 @@ class HomeViewModel extends ChangeNotifier {
     newSectionsOnly = newSectionsOnly && _rows.isNotEmpty;
     if (newSectionsOnly) preserveExisting = true;
     _isLoading = true;
+    final done = Completer<void>();
+    _loadDone = done.future;
     if (!newSectionsOnly) {
       _mediaBarViewModel.load(force: forceRefresh);
       _rowOffsets.clear();
@@ -634,7 +653,7 @@ class HomeViewModel extends ChangeNotifier {
         // Cleanup runs even when the load failed, so the section's loading
         // placeholder is cleared instead of spinning forever.
         final loadedRows = sectionRows
-            .map((r) => r.copyWith(items: _filterEmptyElements(r.items)))
+            .map((r) => r.copyWith(items: filterEmptyElements(r.items)))
             .where(
               (r) => r.items.isNotEmpty || r.rowType == HomeRowType.liveTv,
             )
@@ -728,6 +747,7 @@ class HomeViewModel extends ChangeNotifier {
       _tvChannels.update();
     } finally {
       _isLoading = false;
+      done.complete();
       notifyListeners();
       if (_reloadRequestedWhileLoading) {
         final nextPreserveExisting = _pendingReloadPreserveExisting;
@@ -821,7 +841,9 @@ class HomeViewModel extends ChangeNotifier {
         .toList(growable: false);
   }
 
-  List<AggregatedItem> _filterEmptyElements(List<AggregatedItem> items) {
+  /// [items] without the collections and playlists that have nothing in
+  /// them, which Home leaves out.
+  static List<AggregatedItem> filterEmptyElements(List<AggregatedItem> items) {
     return items.where((item) {
       if (item.type == 'BoxSet' || item.type == 'Playlist') {
         if (item.childCount == 0 || item.recursiveItemCount == 0) {
@@ -1042,8 +1064,11 @@ class HomeViewModel extends ChangeNotifier {
   /// pagination, scroll, and focus state) untouched. A full [refresh] still runs
   /// on the Home button, pull-to-refresh, cold start, and periodic refresh.
   Future<void> refreshResumeAndNextUp() async {
-    // A full load already covers these rows, so don't compete with it.
-    if (_isLoading) return;
+    // A full load can start before the server has the playback stop and fetch
+    // the old rows, so wait for it to finish and fetch again.
+    while (_isLoading) {
+      await _loadDone;
+    }
 
     // A row that came back empty was dropped, so there's no row to refresh in
     // place. Loading it as a new section brings it back once it has items.
@@ -1056,6 +1081,8 @@ class HomeViewModel extends ChangeNotifier {
     }
 
     if (_prefs.effectiveMergeContinueWatchingNextUp) {
+      // The full load starts a merged fetch of its own, so wait for that first.
+      await _bgMerge;
       await _loadResumeAndNextUpInBackground();
       return;
     }
@@ -1113,7 +1140,7 @@ class HomeViewModel extends ChangeNotifier {
     }
     final index = _rows.indexWhere((r) => r.id == rowId);
     if (index < 0) return;
-    final items = _filterEmptyElements(filter(fresh.items));
+    final items = filterEmptyElements(filter(fresh.items));
     // The row is back to its first page, so paging starts over from there.
     _rowOffsets.remove(rowId);
     _rows = List.of(_rows);
@@ -1187,7 +1214,7 @@ class HomeViewModel extends ChangeNotifier {
 
       if (hide != null) {
         final seen = <String>{};
-        final items = _filterEmptyElements(
+        final items = filterEmptyElements(
           hide(result.$1).where((item) => seen.add(item.id)).toList(),
         );
         // Counted from the server's list, so a page that held only hidden
@@ -1203,7 +1230,7 @@ class HomeViewModel extends ChangeNotifier {
         return;
       }
 
-      final filteredItems = _filterEmptyElements(result.$1);
+      final filteredItems = filterEmptyElements(result.$1);
       final newTotalCount = filteredItems.length <= row.items.length
           ? filteredItems.length
           : (result.$2 - (result.$1.length - filteredItems.length));
@@ -1431,24 +1458,33 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  Future<List<HomeRow>> _loadSection(HomeSectionType section, {bool forceRefresh = false}) async {
+  /// [section] as Home loads it, sorted by [sortBy] and [sortOrder] rather
+  /// than the saved sort, so the settings preview can show a sort before
+  /// it's picked.
+  Future<List<HomeRow>> loadSectionSorted(
+    HomeSectionType section, {
+    required LibrarySortBy sortBy,
+    required SortDirection sortOrder,
+  }) => _loadSection(section, sort: (sortBy, sortOrder));
+
+  Future<List<HomeRow>> _loadSection(
+    HomeSectionType section, {
+    bool forceRefresh = false,
+    (LibrarySortBy, SortDirection)? sort,
+  }) async {
+    String sortBy(Preference<LibrarySortBy> saved) =>
+        (sort?.$1 ?? _prefs.get<LibrarySortBy>(saved)).apiValue;
+    String sortOrder(Preference<SortDirection> saved) =>
+        (sort?.$2 ?? _prefs.get<SortDirection>(saved)).apiValue;
     final l10n = currentAppLocalizations();
-    final favoritesSortBy = _prefs
-        .get(UserPreferences.favoritesRowSortBy)
-        .apiValue;
-    final favoritesSortOrder = _prefs
-        .get(UserPreferences.favoritesRowSortOrder)
-        .apiValue;
-    final collectionsSortBy = _prefs
-        .get(UserPreferences.collectionsRowSortBy)
-        .apiValue;
-    final collectionsSortOrder = _prefs
-        .get(UserPreferences.collectionsRowSortOrder)
-        .apiValue;
-    final genresSortBy = _prefs.get(UserPreferences.genresRowSortBy).apiValue;
-    final genresSortOrder = _prefs
-        .get(UserPreferences.genresRowSortOrder)
-        .apiValue;
+    final favoritesSortBy = sortBy(UserPreferences.favoritesRowSortBy);
+    final favoritesSortOrder = sortOrder(UserPreferences.favoritesRowSortOrder);
+    final collectionsSortBy = sortBy(UserPreferences.collectionsRowSortBy);
+    final collectionsSortOrder = sortOrder(
+      UserPreferences.collectionsRowSortOrder,
+    );
+    final genresSortBy = sortBy(UserPreferences.genresRowSortBy);
+    final genresSortOrder = sortOrder(UserPreferences.genresRowSortOrder);
     final genresItemFilter = _prefs
         .get(UserPreferences.genresRowItemFilter)
         .includeItemTypes;
@@ -1473,12 +1509,10 @@ class HomeViewModel extends ChangeNotifier {
             ? await _multiServerRepo.getAggregatedLatestMediaRows()
             : _loadLatestMediaRows();
       case HomeSectionType.playlists:
-        final playlistsSortBy = _prefs
-            .get(UserPreferences.playlistsRowSortBy)
-            .apiValue;
-        final playlistsSortOrder = _prefs
-            .get(UserPreferences.playlistsRowSortOrder)
-            .apiValue;
+        final playlistsSortBy = sortBy(UserPreferences.playlistsRowSortBy);
+        final playlistsSortOrder = sortOrder(
+          UserPreferences.playlistsRowSortOrder,
+        );
         return [
           _multiServerEnabled
               ? await _multiServerRepo.getAggregatedPlaylists(
@@ -1492,12 +1526,8 @@ class HomeViewModel extends ChangeNotifier {
                 ),
         ];
       case HomeSectionType.audioArtists:
-        final audioSortBy = _prefs
-            .get(UserPreferences.audioRowsSortBy)
-            .apiValue;
-        final audioSortOrder = _prefs
-            .get(UserPreferences.audioRowsSortOrder)
-            .apiValue;
+        final audioSortBy = sortBy(UserPreferences.audioRowsSortBy);
+        final audioSortOrder = sortOrder(UserPreferences.audioRowsSortOrder);
         return [
           _multiServerEnabled
               ? await _multiServerRepo.getAggregatedAudioArtists(
@@ -1511,12 +1541,8 @@ class HomeViewModel extends ChangeNotifier {
                 ),
         ];
       case HomeSectionType.audioAlbums:
-        final audioSortBy = _prefs
-            .get(UserPreferences.audioRowsSortBy)
-            .apiValue;
-        final audioSortOrder = _prefs
-            .get(UserPreferences.audioRowsSortOrder)
-            .apiValue;
+        final audioSortBy = sortBy(UserPreferences.audioRowsSortBy);
+        final audioSortOrder = sortOrder(UserPreferences.audioRowsSortOrder);
         return [
           _multiServerEnabled
               ? await _multiServerRepo.getAggregatedAudioAlbums(
@@ -1530,12 +1556,8 @@ class HomeViewModel extends ChangeNotifier {
                 ),
         ];
       case HomeSectionType.audioPlaylists:
-        final audioSortBy = _prefs
-            .get(UserPreferences.audioRowsSortBy)
-            .apiValue;
-        final audioSortOrder = _prefs
-            .get(UserPreferences.audioRowsSortOrder)
-            .apiValue;
+        final audioSortBy = sortBy(UserPreferences.audioRowsSortBy);
+        final audioSortOrder = sortOrder(UserPreferences.audioRowsSortOrder);
         return [
           _multiServerEnabled
               ? await _multiServerRepo.getAggregatedAudioPlaylists(
@@ -1606,8 +1628,8 @@ class HomeViewModel extends ChangeNotifier {
                 ),
         ];
       case HomeSectionType.studios:
-        final studiosSortBy = _prefs.get(UserPreferences.studiosRowSortBy).apiValue;
-        final studiosSortOrder = _prefs.get(UserPreferences.studiosRowSortOrder).apiValue;
+        final studiosSortBy = sortBy(UserPreferences.studiosRowSortBy);
+        final studiosSortOrder = sortOrder(UserPreferences.studiosRowSortOrder);
         final selectedIds = _prefs.get(UserPreferences.studiosRowSelectedIds);
         final logoUrls = GetIt.instance<TmdbRepository>().getStudioLogoUrls();
         final studiosRow = _multiServerEnabled
@@ -2427,7 +2449,7 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> _loadResumeAndNextUpInBackground() {
     if (_bgMergeInFlight) return Future<void>.value();
     _bgMergeInFlight = true;
-    return () async {
+    return _bgMerge = () async {
       try {
         // Fetched side by side but tolerated separately. A server that is
         // slow to answer one of these must not take the other down with it,
@@ -2589,7 +2611,7 @@ class HomeViewModel extends ChangeNotifier {
     ]);
     final addedNothing = appended.length == row.items.length;
 
-    final items = _filterEmptyElements(appended);
+    final items = filterEmptyElements(appended);
     final index = _rows.indexWhere((r) => r.id == row.id);
     if (index < 0) return;
     _rows = List.of(_rows);
@@ -3272,6 +3294,23 @@ class HomeViewModel extends ChangeNotifier {
     return sorted;
   }
 
+  /// The cards of an IMDb or TMDB chart row: outside entries, with the titles
+  /// the library has swapped for their library copies.
+  Future<List<AggregatedItem>> _externalListCards(
+    List<ImdbExternalListItem> items,
+  ) => _dataSource.withLibraryCopies(_serverId, [
+    for (final item in items)
+      AggregatedItem(
+        id: item.imdbId.isNotEmpty ? item.imdbId : item.tmdbId,
+        serverId: 'seerr',
+        rawData: {
+          ...item.cardData,
+          'CommunityRating': item.rating,
+          'Popularity': item.popularity,
+        },
+      ),
+  ]);
+
   Future<List<HomeRow>> _loadImdbRow(
     HomeSectionType sectionType,
     String title,
@@ -3302,18 +3341,7 @@ class HomeViewModel extends ChangeNotifier {
         return const [];
       }
 
-      final aggregatedItems = items.map((item) {
-        final itemId = item.imdbId.isNotEmpty ? item.imdbId : item.tmdbId;
-        return AggregatedItem(
-          id: itemId,
-          serverId: 'seerr',
-          rawData: {
-            ...item.cardData,
-            'CommunityRating': item.rating,
-            'Popularity': item.popularity,
-          },
-        );
-      }).toList();
+      final aggregatedItems = await _externalListCards(items);
 
       return [
         HomeRow(
@@ -3363,18 +3391,7 @@ class HomeViewModel extends ChangeNotifier {
         return const [];
       }
 
-      final aggregatedItems = items.map((item) {
-        final itemId = item.imdbId.isNotEmpty ? item.imdbId : item.tmdbId;
-        return AggregatedItem(
-          id: itemId,
-          serverId: 'seerr',
-          rawData: {
-            ...item.cardData,
-            'CommunityRating': item.rating,
-            'Popularity': item.popularity,
-          },
-        );
-      }).toList();
+      final aggregatedItems = await _externalListCards(items);
 
       return [
         HomeRow(

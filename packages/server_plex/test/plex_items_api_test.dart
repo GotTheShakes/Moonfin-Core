@@ -82,6 +82,17 @@ void main() {
       expect(other.myMediaExcludes, isEmpty);
     });
 
+    test('nothing saved yet reads Hide Watched in Latest as off', () async {
+      expect(
+        (await api(_MemoryStore()).getUserConfiguration()).hidePlayedInLatest,
+        isFalse,
+      );
+      expect(
+        (await api(null).getUserConfiguration()).hidePlayedInLatest,
+        isFalse,
+      );
+    });
+
     test('without storage it reads defaults and refuses to save', () async {
       final noStore = api(null);
       expect((await noStore.getUserConfiguration()).myMediaExcludes, isEmpty);

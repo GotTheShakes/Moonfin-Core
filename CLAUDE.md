@@ -41,11 +41,33 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-11, fork main at c7cb2587b (52 commits), merged
-into `aether-fel` as 75c578451; DMG run 42949011462 passed. The only conflict
-was `_exitPlayback` in `video_player_screen.dart`: keep both
-`waitForBackKeyUp` (fork) and `finished` (upstream credits skip). The fork's
-"Deploy Web To GitHub Pages" workflow is disabled (no Pages site on the fork).
+Last upstream sync: 2026-11-12, fork main at 259905306 (25 commits), merged
+into `aether-fel` as c2c5f1f13 (rollback point before it: 6a6a5bea2); DMG run
+43134210198 passed (Xcode 26.3). It brought **AetherEngine 34f149b** (7.62.1
+fork; was 93a024a), pinned in `macos/AetherEngineTraits/Package.swift` and
+`wire_macos_player.rb`; the direct engine reference the merge re-added to the
+.pbxproj was removed again. Conflicts: Plex client/factory (keep
+`configStore:` and upstream's `gamesApi:`), `PlexUsersApi.getUserConfiguration`
+(read the device store, fall back to upstream's `hidePlayedInLatest: false`;
+test added), and the .pbxproj. Previous sync (2026-11-11, c7cb2587b): the
+`_exitPlayback` conflict, keep both `waitForBackKeyUp` and `finished`.
+
+Engine 34f149b notes: the `DolbyVisionFelCurves` curve fold is always compiled
+in (the engine `.define`s it, because Xcode ignores traits) and runs on the
+native Profile 7 -> 8.1 route (FEL setting off, VOD): it folds the enhancement
+layer's luma residual into the 8.1 RPU's luma curve per scene, log line
+`[FelCurves] FEL source: mapping kept in the Profile 8.1 RPU, ...`. The
+dual-layer route (FEL setting on) is unchanged and takes precedence. TrueHD
+Atmos heights are now built by `BedRegression` from the lossless 7.1 steered by
+the objects (same trait and option). Trait names are unchanged. DTSXObjectAudio
+should compile on Xcode 27.2 (engine CI builds all traits on Xcode 27) but is
+left off by the owner's choice.
+
+`flutter pub get` regenerates `lib/l10n/app_localizations*.dart` with the
+fork's strings. Do not commit those: CI regenerates them, and committing them
+would make every upstream localization update conflict. Flutter 3.47.2 can be
+cloned into the scratchpad to run `flutter analyze` and the package tests.
+The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
 
 ## Done so far (see docs/macos-atmos-and-dolby-vision.md)
 

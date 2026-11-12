@@ -21,7 +21,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/RadicalMuffinMan/AetherEngine",
-            revision: "93a024a5b72a735c996ca289e7dc0ed8d09dc787",
+            revision: "34f149ba2dd483f490dca13a5a3027d58a9956f5",
             // DTSXObjectAudio is left out: at this revision its decoder fails to
             // compile with Xcode 26.3's Swift ("sending value of non-Sendable type
             // '() async -> DTSXObjectAudioDecoder.Verdict?'" in

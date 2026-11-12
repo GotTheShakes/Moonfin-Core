@@ -206,21 +206,29 @@ class PlexUsersApi implements UsersApi {
   Future<List<AccessSchedule>?> getAccessSchedules(String userId) async =>
       const [];
 
+  /// What a Plex account reports when nothing is saved on the device yet.
+  /// Plex has no server setting for hiding watched items in Latest, so it
+  /// reads as off rather than the Jellyfin default, which would otherwise
+  /// seed Hide Watched in the Recently Added rows.
+  static const _defaultConfiguration = UserConfiguration(
+    hidePlayedInLatest: false,
+  );
+
   /// Plex keeps no library visibility or order for an account, so what the
   /// user sets in the app is kept on this device. A missing or unreadable
   /// entry reads as the defaults.
   @override
   Future<UserConfiguration> getUserConfiguration() async {
     final store = _store;
-    if (store == null) return const UserConfiguration();
+    if (store == null) return _defaultConfiguration;
     try {
       final raw = await store.read(await _configKey());
-      if (raw == null) return const UserConfiguration();
+      if (raw == null) return _defaultConfiguration;
       final json = jsonDecode(raw);
-      if (json is! Map<String, dynamic>) return const UserConfiguration();
+      if (json is! Map<String, dynamic>) return _defaultConfiguration;
       return UserConfiguration.fromJson(json);
     } catch (_) {
-      return const UserConfiguration();
+      return _defaultConfiguration;
     }
   }
 

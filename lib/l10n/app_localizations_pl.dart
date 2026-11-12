@@ -4105,10 +4105,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get upcomingCalendarsDescription =>
-      'Toggle Upcoming Calendars from Radarr/Sonarr.';
-
-  @override
-  String get enableRadarrCalendar => 'Enable Radarr\'s Upcoming Calendar';
+      'Choose what the Radarr and Sonarr rows show.';
 
   @override
   String get radarrCalendarShowCinema => 'Show Upcoming Cinema Releases';
@@ -4125,9 +4122,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get radarrCalendarHideDownloaded =>
       'Hide Movies Already on the Server';
-
-  @override
-  String get enableSonarrCalendar => 'Enable Sonarr\'s Upcoming Calendar';
 
   @override
   String get sonarrCalendarShowEpisodeInfo => 'Display Episode Information';
@@ -5001,6 +4995,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Pokaż biblioteki ze wszystkich podłączonych serwerów';
 
   @override
+  String get recentlyAddedAndReleased => 'Recently Added and Released';
+
+  @override
+  String get hideWatchedInRecentRows => 'Hide Watched';
+
+  @override
+  String get hideWatchedInRecentRowsDescription =>
+      'Hide watched content from Recently Added and Recently Released home rows.';
+
+  @override
   String get mergeRecentRowsByType => 'Łącz ostatnie sekcje według typu';
 
   @override
@@ -5689,10 +5693,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get mdblistWatchingNow => 'Watching on MDBList';
 
   @override
-  String get mdblistWatchingNowDescription =>
-      'Show what MDBList users are currently watching';
-
-  @override
   String watchingNowWatchersCount(int count) {
     return '$count watching';
   }
@@ -6098,6 +6098,37 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get seerrImportingStatus => 'Importowanie';
+
+  @override
+  String get seerrWaitingForImport => 'Downloaded, waiting for import';
+
+  @override
+  String get seerrDownloadStalled => 'Stalled';
+
+  @override
+  String get seerrDownloadFailed => 'Download failed';
+
+  @override
+  String get seerrImportBlocked => 'Import blocked';
+
+  @override
+  String get seerrNotFoundYet => 'Not found yet';
+
+  @override
+  String get seerrGetDifferentRelease => 'Get a different release';
+
+  @override
+  String seerrGetDifferentReleaseConfirm(String service, String release) {
+    return '$service will remove $release from the download client, block it so it isn\'t grabbed again, and search for another release.';
+  }
+
+  @override
+  String seerrGetDifferentReleaseDone(String service) {
+    return 'Removed. $service is searching for another release.';
+  }
+
+  @override
+  String get seerrGetDifferentReleaseFailed => 'Couldn\'t remove the download';
 
   @override
   String itemsCount(int count) {
@@ -11562,6 +11593,11 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wprowadź kod PIN, aby przywrócić pełną wersję aplikacji';
 
   @override
+  String kidsModePinToSwitchUser(String name) {
+    return 'Enter the Kids Mode PIN to switch to $name';
+  }
+
+  @override
   String get pinIncorrect => 'Nieprawidłowy PIN';
 
   @override
@@ -16766,6 +16802,30 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settingsAdvancedSection => 'Zaawansowane';
 
   @override
+  String get settingsDecodingAndRenderingSection => 'Decoding & Rendering';
+
+  @override
+  String get settingsAudioStreamSection => 'Audio Stream';
+
+  @override
+  String get settingsAudioOutputSection => 'Audio Output';
+
+  @override
+  String get settingsPassthroughSettingsSection => 'Passthrough Settings';
+
+  @override
+  String get settingsSeerrHomePageRowsSection => 'Seerr Home Page Rows';
+
+  @override
+  String get settingsSavedCustomHomeRowsSection => 'Saved Custom Home Rows';
+
+  @override
+  String get settingsRewatchSection => 'Rewatch';
+
+  @override
+  String get favoritesSwitchViewSection => 'Switch View';
+
+  @override
   String get playerSettingsSubtitle =>
       'Sterowanie, przewijanie, przyciski odtwarzacza i podgląd podczas przewijania';
 
@@ -17798,6 +17858,71 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsPreviewNotShown => 'Not shown in the preview';
+
+  @override
+  String settingsPreviewAudioRowsOffInHomeRows(String group, String disabled) {
+    return 'Albums, Artists and Audio Playlists are all turned off. To show one, go to Rows, open $group under $disabled, and turn it on.';
+  }
+
+  @override
+  String settingsPreviewAudioRowsOffInHomeRowsSwitchOff(
+    String setting,
+    String group,
+    String disabled,
+  ) {
+    return 'To see Albums, Artists or Audio Playlists on Home, first turn on $setting. Then go to Rows, open $group under $disabled, and turn one on.';
+  }
+
+  @override
+  String settingsPreviewCollectionsOffInHomeRows(
+    String group,
+    String disabled,
+  ) {
+    return 'The Collections row is turned off. To show it, go to Rows, open $group under $disabled, and turn it on.';
+  }
+
+  @override
+  String settingsPreviewCollectionsOffInHomeRowsSwitchOff(
+    String setting,
+    String group,
+    String disabled,
+  ) {
+    return 'To see the Collections row on Home, first turn on $setting. Then go to Rows, open $group under $disabled, and turn it on.';
+  }
+
+  @override
+  String get settingsPreviewRowsOffInKidsMode =>
+      'Kids Mode keeps these rows off Home, so these settings don\'t change it.';
+
+  @override
+  String settingsPreviewNeedsRowInRows(String disabled) {
+    return 'Turn on a row in Rows, under $disabled';
+  }
+
+  @override
+  String settingsPreviewNeedsSwitchAndRow(String setting) {
+    return 'Turn on $setting, then turn on a row in Rows';
+  }
+
+  @override
+  String get settingsPreviewKeptOffByKidsMode =>
+      'Kids Mode keeps this off Home';
+
+  @override
+  String get settingsPreviewAudioRowsEmpty =>
+      'There\'s no music to show, so Home leaves these rows out.';
+
+  @override
+  String get settingsPreviewRowsEmpty =>
+      'There\'s nothing to show in these rows, so Home leaves them out.';
+
+  @override
+  String get settingsPreviewCollectionsEmpty =>
+      'There are no collections to show, so Home leaves this row out.';
+
+  @override
+  String get settingsPreviewShowEpisodesNote =>
+      'This only changes rows for a single collection added in Rows. The Collections row looks the same.';
 
   @override
   String get settingsPreviewSaved => 'Saved';

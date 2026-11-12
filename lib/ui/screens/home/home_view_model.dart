@@ -291,51 +291,6 @@ class HomeViewModel extends ChangeNotifier {
   static bool _isTmdbSectionType(HomeSectionType type) =>
       UserPreferences.isTmdbSectionType(type);
 
-  bool _isTmdbSectionEnabled(HomeSectionType type) {
-    final pref = UserPreferences.tmdbSectionEnabled[type];
-    return pref != null && _prefs.get(pref);
-  }
-
-  bool _isAnyTmdbSectionEnabled() =>
-      UserPreferences.tmdbSectionEnabled.values.any(_prefs.get);
-
-  static bool _isImdbSectionType(HomeSectionType type) {
-    return type == HomeSectionType.imdbTop250Movies ||
-        type == HomeSectionType.imdbTop250TvShows ||
-        type == HomeSectionType.imdbMostPopularMovies ||
-        type == HomeSectionType.imdbMostPopularTvShows ||
-        type == HomeSectionType.imdbLowestRatedMovies ||
-        type == HomeSectionType.imdbTopEnglishMovies;
-  }
-
-  bool _isImdbSectionEnabled(HomeSectionType type) {
-    switch (type) {
-      case HomeSectionType.imdbTop250Movies:
-        return _prefs.get(UserPreferences.imdbTop250MoviesEnabled);
-      case HomeSectionType.imdbTop250TvShows:
-        return _prefs.get(UserPreferences.imdbTop250TvShowsEnabled);
-      case HomeSectionType.imdbMostPopularMovies:
-        return _prefs.get(UserPreferences.imdbMostPopularMoviesEnabled);
-      case HomeSectionType.imdbMostPopularTvShows:
-        return _prefs.get(UserPreferences.imdbMostPopularTvShowsEnabled);
-      case HomeSectionType.imdbLowestRatedMovies:
-        return _prefs.get(UserPreferences.imdbLowestRatedMoviesEnabled);
-      case HomeSectionType.imdbTopEnglishMovies:
-        return _prefs.get(UserPreferences.imdbTopEnglishMoviesEnabled);
-      default:
-        return false;
-    }
-  }
-
-  bool _isAnyImdbSectionEnabled() {
-    return _prefs.get(UserPreferences.imdbTop250MoviesEnabled) ||
-        _prefs.get(UserPreferences.imdbTop250TvShowsEnabled) ||
-        _prefs.get(UserPreferences.imdbMostPopularMoviesEnabled) ||
-        _prefs.get(UserPreferences.imdbMostPopularTvShowsEnabled) ||
-        _prefs.get(UserPreferences.imdbLowestRatedMoviesEnabled) ||
-        _prefs.get(UserPreferences.imdbTopEnglishMoviesEnabled);
-  }
-
   ImageApi imageApiForServer(String serverId) {
     if (!_multiServerEnabled) return _dataSource.imageApi;
     return _multiServerRepo.getImageApiForServer(serverId);
@@ -381,6 +336,11 @@ class HomeViewModel extends ChangeNotifier {
     required int existingItemCount,
     required int freshItemCount,
   }) => pagedDuringLoad && existingItemCount > freshItemCount;
+
+  @visibleForTesting
+  void setRowsForTesting(List<HomeRow> rows) {
+    _rows = rows;
+  }
 
   /// Whether the home has to load again because the server came back.
   ///
@@ -469,15 +429,17 @@ class HomeViewModel extends ChangeNotifier {
       final showAudioRows = _prefs.get(UserPreferences.displayAudioRows);
       final showSeerrRows = GetIt.instance<PluginSyncService>().seerrAvailable;
       final seerrPrefs = GetIt.instance<SeerrPreferences>();
-      final showImdbRows = _isAnyImdbSectionEnabled();
-      final showTmdbRows = _isAnyTmdbSectionEnabled();
       final showSinceYouWatched = _prefs.get(UserPreferences.displaySinceYouWatchedRows);
       final sinceYouWatchedNum = _prefs.get(UserPreferences.sinceYouWatchedNumRows).value;
       final showRewatch = _prefs.get(UserPreferences.displayRewatchRow);
       final showStudiosRows = _prefs.get(UserPreferences.displayStudiosRows);
-      final showSeasonal = _prefs.get(UserPreferences.seasonalRowEnabled) &&
-          (GetIt.instance<PluginSyncService>().pluginAvailable ||
-              _client.itemsApi is ServerHomeSectionsApi);
+      final sync = GetIt.instance<PluginSyncService>();
+      bool externalRowShown(HomeSectionType type) =>
+          sync.externalRowAvailable(
+            type,
+            serverBuildsSeasonal: () => _client.itemsApi is ServerHomeSectionsApi,
+          ) ??
+          true;
 
       final offline = _isOffline;
       final visibleConfigsRaw = configs
@@ -507,13 +469,9 @@ class HomeViewModel extends ChangeNotifier {
                 (showAudioRows || !_isAudioSectionType(c.type)) &&
                 (!_isSeerrSectionType(c.type) || (showSeerrRows && seerrPrefs.isSeerrHomeRowEnabled(c.type))) &&
                 (showSeerrRows || !isSeerrSliderSection(c)) &&
-                (!_isImdbSectionType(c.type) || (showImdbRows && _isImdbSectionEnabled(c.type))) &&
-                (!_isTmdbSectionType(c.type) || (showTmdbRows && _isTmdbSectionEnabled(c.type))) &&
-                (c.type != HomeSectionType.radarrCalendar || _prefs.get(UserPreferences.enableRadarrCalendar)) &&
-                (c.type != HomeSectionType.sonarrCalendar || _prefs.get(UserPreferences.enableSonarrCalendar)) &&
+                externalRowShown(c.type) &&
                 (c.type.sinceYouWatchedRow == 0 || (showSinceYouWatched && c.type.sinceYouWatchedRow <= sinceYouWatchedNum)) &&
-                (c.type != HomeSectionType.rewatch || showRewatch) &&
-                (c.type != HomeSectionType.seasonal || showSeasonal),
+                (c.type != HomeSectionType.rewatch || showRewatch),
           )
           .toList(growable: false);
 
@@ -1231,8 +1189,12 @@ class HomeViewModel extends ChangeNotifier {
       }
 
       final filteredItems = filterEmptyElements(result.$1);
+      final isCumulativeRecentRow = row.rowType == HomeRowType.latestMedia ||
+          row.rowType == HomeRowType.recentlyReleased;
       final newTotalCount = filteredItems.length <= row.items.length
-          ? filteredItems.length
+          ? (isCumulativeRecentRow && result.$2 > filteredItems.length
+              ? result.$2
+              : filteredItems.length)
           : (result.$2 - (result.$1.length - filteredItems.length));
       _replaceRowById(
         row.copyWith(items: filteredItems, totalCount: newTotalCount),
@@ -1976,6 +1938,7 @@ class HomeViewModel extends ChangeNotifier {
         allItems,
         collectionType: collectionType,
         limit: _mergedRowItemLimit,
+        hideWatched: _prefs.get(UserPreferences.hideWatchedInRecentRows),
       );
       if (items.isEmpty) continue;
 
@@ -2484,15 +2447,17 @@ class HomeViewModel extends ChangeNotifier {
     }();
   }
 
+  static String _lastPlayedOf(AggregatedItem item) =>
+      item.rawData['UserData']?['LastPlayedDate'] as String? ?? '';
+
   /// Newest first by when the user last played the item.
-  static int _byLastPlayedDate(AggregatedItem a, AggregatedItem b) {
-    final aDate = a.rawData['UserData']?['LastPlayedDate'] as String? ?? '';
-    final bDate = b.rawData['UserData']?['LastPlayedDate'] as String? ?? '';
-    return bDate.compareTo(aDate);
-  }
+  static int _byLastPlayedDate(AggregatedItem a, AggregatedItem b) =>
+      _lastPlayedOf(b).compareTo(_lastPlayedOf(a));
 
   /// [existing] with the unseen items of [incoming] appended. The first id
-  /// wins, so Continue Watching keeps an episode Next Up also offers.
+  /// wins, so Continue Watching keeps an episode Next Up also offers, unless
+  /// that copy has no last played date and a later one does. Emby's Resume
+  /// repeats Next Up episodes without one.
   ///
   /// The row is never sorted as a whole. A Next Up episode carries the last
   /// played date of its series, so it would sort in among items the viewer
@@ -2503,12 +2468,17 @@ class HomeViewModel extends ChangeNotifier {
     List<AggregatedItem> incoming,
   ) {
     final seen = {for (final item in existing) item.id};
-    final added = <AggregatedItem>[];
+    final added = <String, AggregatedItem>{};
     for (final item in incoming) {
-      if (seen.add(item.id)) added.add(item);
+      if (seen.contains(item.id)) continue;
+      final kept = added[item.id];
+      if (kept == null ||
+          (_lastPlayedOf(kept).isEmpty && _lastPlayedOf(item).isNotEmpty)) {
+        added[item.id] = item;
+      }
     }
-    added.sort(_byLastPlayedDate);
-    return [...existing, ...added];
+    final arrivals = added.values.toList()..sort(_byLastPlayedDate);
+    return [...existing, ...arrivals];
   }
 
   /// Returns null rather than throwing, so a caller merging several sources
@@ -2528,19 +2498,13 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   /// Merges a fresh first page of Continue Watching and Next Up into the
-  /// resume row. Resume items win the dedupe.
+  /// resume row, deduped the way [appendNewArrivals] does it.
   void _applyMergedResumeRows(HomeRow? resumeRow, HomeRow? nextUpRow) {
     if (resumeRow == null && nextUpRow == null) return;
-    final merged = <String, AggregatedItem>{};
-    for (final item in _prefs.filterContinueWatching(
-      resumeRow?.items ?? const [],
-    )) {
-      merged[item.id] = item;
-    }
-    for (final item in _prefs.filterNextUp(nextUpRow?.items ?? const [])) {
-      merged.putIfAbsent(item.id, () => item);
-    }
-    final sorted = merged.values.toList()..sort(_byLastPlayedDate);
+    final sorted = appendNewArrivals(const [], [
+      ..._prefs.filterContinueWatching(resumeRow?.items ?? const []),
+      ..._prefs.filterNextUp(nextUpRow?.items ?? const []),
+    ]);
     final existing = _rows.firstWhereOrNull((r) => r.id == 'resume');
     if (existing != null &&
         keepsPagedRow(
@@ -3506,7 +3470,9 @@ class HomeViewModel extends ChangeNotifier {
   void _ensureWatchingNowTimer() {
     if (_watchingNowTimer != null && _watchingNowTimer!.isActive) return;
     _watchingNowTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      final isConfigured = _prefs.get(UserPreferences.mdblistWatchingNowEnabled) &&
+      final isConfigured = (GetIt.instance<PluginSyncService>()
+                  .externalRowAvailable(HomeSectionType.mdblistWatchingNow) ??
+              false) &&
           _prefs.activeHomeSectionConfigs.any((c) => c.type == HomeSectionType.mdblistWatchingNow);
       if (!isConfigured) {
         _watchingNowTimer?.cancel();

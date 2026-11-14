@@ -267,7 +267,11 @@ class HomeViewModel extends ChangeNotifier {
       HomeSectionType.sonarrCalendar ||
       HomeSectionType.seasonal =>
         false,
-      final t when _isSeerrSectionType(t) || _isTmdbSectionType(t) => false,
+      final t
+          when _isSeerrSectionType(t) ||
+              _isTmdbSectionType(t) ||
+              externalCharts.containsKey(t) =>
+        false,
       _ => true,
     };
   }
@@ -847,6 +851,28 @@ class HomeViewModel extends ChangeNotifier {
     }
 
     switch (cfg.type) {
+      case HomeSectionType.mdblistMostWatchedWeekMovies ||
+          HomeSectionType.mdblistMostWatchedWeekShows ||
+          HomeSectionType.mdblistMostWatchedYearMovies ||
+          HomeSectionType.mdblistMostWatchedYearShows ||
+          HomeSectionType.mdblistAnticipatedMovies ||
+          HomeSectionType.mdblistAnticipatedShows ||
+          HomeSectionType.mdblistStreamingChartsMovies ||
+          HomeSectionType.mdblistStreamingChartsShows ||
+          HomeSectionType.justwatchTopMovies ||
+          HomeSectionType.justwatchTopShows ||
+          HomeSectionType.tmdbTrendingAllDaily ||
+          HomeSectionType.tmdbKoreanDramas ||
+          HomeSectionType.tmdbAnime ||
+          HomeSectionType.tmdbNewDigitalMovies ||
+          HomeSectionType.tmdbHiddenGems ||
+          HomeSectionType.tmdbNetflix ||
+          HomeSectionType.tmdbPrimeVideo ||
+          HomeSectionType.tmdbDisneyPlus ||
+          HomeSectionType.tmdbHboMax ||
+          HomeSectionType.tmdbAppleTv ||
+          HomeSectionType.tmdbParamountPlus:
+        return row.id == cfg.type.serializedName;
       case HomeSectionType.resume:
         return row.rowType == HomeRowType.resume;
       case HomeSectionType.resumeAudio:
@@ -1278,6 +1304,28 @@ class HomeViewModel extends ChangeNotifier {
 
   static Set<String> _duplicateKeysForBuiltin(HomeSectionType type) {
     switch (type) {
+      case HomeSectionType.mdblistMostWatchedWeekMovies ||
+          HomeSectionType.mdblistMostWatchedWeekShows ||
+          HomeSectionType.mdblistMostWatchedYearMovies ||
+          HomeSectionType.mdblistMostWatchedYearShows ||
+          HomeSectionType.mdblistAnticipatedMovies ||
+          HomeSectionType.mdblistAnticipatedShows ||
+          HomeSectionType.mdblistStreamingChartsMovies ||
+          HomeSectionType.mdblistStreamingChartsShows ||
+          HomeSectionType.justwatchTopMovies ||
+          HomeSectionType.justwatchTopShows ||
+          HomeSectionType.tmdbTrendingAllDaily ||
+          HomeSectionType.tmdbKoreanDramas ||
+          HomeSectionType.tmdbAnime ||
+          HomeSectionType.tmdbNewDigitalMovies ||
+          HomeSectionType.tmdbHiddenGems ||
+          HomeSectionType.tmdbNetflix ||
+          HomeSectionType.tmdbPrimeVideo ||
+          HomeSectionType.tmdbDisneyPlus ||
+          HomeSectionType.tmdbHboMax ||
+          HomeSectionType.tmdbAppleTv ||
+          HomeSectionType.tmdbParamountPlus:
+        return {type.serializedName};
       case HomeSectionType.latestMedia:
         return const {'latestMedia'};
       case HomeSectionType.recentlyReleased:
@@ -1451,6 +1499,36 @@ class HomeViewModel extends ChangeNotifier {
         .get(UserPreferences.genresRowItemFilter)
         .includeItemTypes;
     switch (section) {
+      case HomeSectionType.mdblistMostWatchedWeekMovies ||
+          HomeSectionType.mdblistMostWatchedWeekShows ||
+          HomeSectionType.mdblistMostWatchedYearMovies ||
+          HomeSectionType.mdblistMostWatchedYearShows ||
+          HomeSectionType.mdblistAnticipatedMovies ||
+          HomeSectionType.mdblistAnticipatedShows ||
+          HomeSectionType.mdblistStreamingChartsMovies ||
+          HomeSectionType.mdblistStreamingChartsShows ||
+          HomeSectionType.justwatchTopMovies ||
+          HomeSectionType.justwatchTopShows ||
+          HomeSectionType.tmdbTrendingAllDaily ||
+          HomeSectionType.tmdbKoreanDramas ||
+          HomeSectionType.tmdbAnime ||
+          HomeSectionType.tmdbNewDigitalMovies ||
+          HomeSectionType.tmdbHiddenGems ||
+          HomeSectionType.tmdbNetflix ||
+          HomeSectionType.tmdbPrimeVideo ||
+          HomeSectionType.tmdbDisneyPlus ||
+          HomeSectionType.tmdbHboMax ||
+          HomeSectionType.tmdbAppleTv ||
+          HomeSectionType.tmdbParamountPlus:
+        final chart = externalCharts[section]!;
+        return _loadChartRow(section, chart.title, section.serializedName, {
+          'source': chart.source,
+          'type': chart.type,
+          'params': {
+            ...chart.params,
+            if (chart.regional) 'region': ?deviceCountryCode(),
+          },
+        });
       case HomeSectionType.resume:
         final row = _multiServerEnabled
             ? await _multiServerRepo.getAggregatedResume()
@@ -1875,6 +1953,9 @@ class HomeViewModel extends ChangeNotifier {
 
     final views = await viewsFuture;
     final Set<String> latestExcludes = await configFuture;
+    if (GetIt.instance.isRegistered<GameLibraryRegistry>()) {
+      await GetIt.instance<GameLibraryRegistry>().refresh();
+    }
 
     final filteredViews = views.where((lib) {
       final collectionType = lib.collectionType.toLowerCase();
@@ -1886,8 +1967,19 @@ class HomeViewModel extends ChangeNotifier {
       return !latestExcludes.contains(lib.id);
     }).toList();
 
+    bool isGames(AggregatedLibrary lib) =>
+        isGameLibrary(lib.id, lib.collectionType, lib.name);
+
     Future<HomeRow?> rowFor(AggregatedLibrary lib) async {
       try {
+        if (isGames(lib)) {
+          return await _loadGameRow(
+            lib,
+            id: '${idPrefix}_${lib.id}',
+            title: mergedTitle(currentAppLocalizations(), lib.name),
+            rowType: rowType,
+          );
+        }
         return await load(lib, lib.collectionType.toLowerCase());
       } catch (_) {
         return null;
@@ -1902,8 +1994,10 @@ class HomeViewModel extends ChangeNotifier {
           .toList();
     }
 
+    // Game rows hold games, not media, so they never merge with a library's.
+    final gameRows = Future.wait(filteredViews.where(isGames).map(rowFor));
     final grouped = <String, List<AggregatedLibrary>>{};
-    for (final lib in filteredViews) {
+    for (final lib in filteredViews.where((lib) => !isGames(lib))) {
       grouped.putIfAbsent(lib.collectionType.toLowerCase(), () => []).add(lib);
     }
 
@@ -1958,7 +2052,34 @@ class HomeViewModel extends ChangeNotifier {
       );
     }
 
-    return mergedRows;
+    return [
+      ...mergedRows,
+      ...(await gameRows).whereType<HomeRow>().where((row) => row.items.isNotEmpty),
+    ];
+  }
+
+  /// A game library's recent row comes from Moonbase, since the server
+  /// itself can't see the games. A server without the route leaves it out.
+  Future<HomeRow?> _loadGameRow(
+    AggregatedLibrary lib, {
+    required String id,
+    required String title,
+    required HomeRowType rowType,
+  }) async {
+    final gamesApi = _client.gamesApi;
+    if (gamesApi == null) return null;
+    final games = await gamesApi.getRecentGames(
+      lib.id,
+      released: rowType == HomeRowType.recentlyReleased,
+    );
+    final items = [for (final game in games) gameHomeItem(game, lib.id, _serverId)];
+    return HomeRow(
+      id: id,
+      title: title,
+      items: items,
+      rowType: rowType,
+      totalCount: items.length,
+    );
   }
 
   static DateTime? _parseDate(dynamic value) => parseServerDate(value);
@@ -1976,6 +2097,33 @@ class HomeViewModel extends ChangeNotifier {
   HomeRow? _placeholderForSection(HomeSectionType section) {
     final l10n = currentAppLocalizations();
     switch (section) {
+      case HomeSectionType.mdblistMostWatchedWeekMovies ||
+          HomeSectionType.mdblistMostWatchedWeekShows ||
+          HomeSectionType.mdblistMostWatchedYearMovies ||
+          HomeSectionType.mdblistMostWatchedYearShows ||
+          HomeSectionType.mdblistAnticipatedMovies ||
+          HomeSectionType.mdblistAnticipatedShows ||
+          HomeSectionType.mdblistStreamingChartsMovies ||
+          HomeSectionType.mdblistStreamingChartsShows ||
+          HomeSectionType.justwatchTopMovies ||
+          HomeSectionType.justwatchTopShows ||
+          HomeSectionType.tmdbTrendingAllDaily ||
+          HomeSectionType.tmdbKoreanDramas ||
+          HomeSectionType.tmdbAnime ||
+          HomeSectionType.tmdbNewDigitalMovies ||
+          HomeSectionType.tmdbHiddenGems ||
+          HomeSectionType.tmdbNetflix ||
+          HomeSectionType.tmdbPrimeVideo ||
+          HomeSectionType.tmdbDisneyPlus ||
+          HomeSectionType.tmdbHboMax ||
+          HomeSectionType.tmdbAppleTv ||
+          HomeSectionType.tmdbParamountPlus:
+        return HomeRow(
+          id: section.serializedName,
+          title: externalCharts[section]!.title,
+          rowType: HomeRowType.pluginDynamic,
+          isLoading: true,
+        );
       case HomeSectionType.resume:
         return HomeRow(
           id: 'resume',
@@ -3329,6 +3477,18 @@ class HomeViewModel extends ChangeNotifier {
     HomeSectionType sectionType,
     String title,
     String rowId,
+  ) => _loadChartRow(sectionType, title, rowId, {
+    'source': 'tmdb_chart',
+    'type': tmdbChartPaths[sectionType] ?? 'movie/popular',
+  });
+
+  /// A row of an outside chart that Moonbase's custom rows endpoint serves,
+  /// asked for with [request]'s source, type and params.
+  Future<List<HomeRow>> _loadChartRow(
+    HomeSectionType sectionType,
+    String title,
+    String rowId,
+    Map<String, Object> request,
   ) async {
     try {
       final customService = GetIt.instance<CustomExternalListsService>();
@@ -3337,10 +3497,7 @@ class HomeViewModel extends ChangeNotifier {
         pluginSection: rowId,
         pluginDisplayText: title,
         pluginSource: HomeSectionPluginSource.custom,
-        pluginAdditionalData: jsonEncode({
-          'source': 'tmdb_chart',
-          'type': tmdbChartPaths[sectionType] ?? 'movie/popular',
-        }),
+        pluginAdditionalData: jsonEncode(request),
       );
 
       var items = await customService.loadCustomRowFromCache(
@@ -3370,7 +3527,7 @@ class HomeViewModel extends ChangeNotifier {
         )
       ];
     } catch (e) {
-      debugPrint('[TmdbChartRow] Failed to load TMDB chart row $sectionType: $e');
+      debugPrint('[ChartRow] Failed to load chart row $sectionType: $e');
       return const [];
     }
   }

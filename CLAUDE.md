@@ -41,7 +41,13 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-12, fork main at 259905306 (25 commits), merged
+Last upstream sync: 2026-11-14, fork main at 13091f3e9 (174 commits), merged
+into `aether-fel` as 6f61835fe (rollback point before it: 13c894a00) with no
+conflicts and no engine change; upstream's only macOS change was Firebase
+package pins in Package.resolved. DMG run 43652846497 passed (Xcode 26.3).
+Plex tests (86) and `flutter analyze` (0 errors) were clean.
+
+Previous sync: 2026-11-12, fork main at 259905306 (25 commits), merged
 into `aether-fel` as c2c5f1f13 (rollback point before it: 6a6a5bea2); DMG run
 43134210198 passed (Xcode 26.3). It brought **AetherEngine 34f149b** (7.62.1
 fork; was 93a024a), pinned in `macos/AetherEngineTraits/Package.swift` and

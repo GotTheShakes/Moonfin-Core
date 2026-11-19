@@ -1,7 +1,7 @@
 name: moonfin
 description: "Moonfin - Jellyfin & Emby media client for mobile, tablet, and desktop"
 publish_to: 'none'
-version: 3.1.0+30000163
+version: 3.1.1+30000165
 
 moonfin:
   beta: false
@@ -334,6 +334,14 @@ flutter:
         - asset: assets/fonts/Literata-Regular.ttf
         - asset: assets/fonts/Literata-SemiBold.ttf
           weight: 600
+    # The MakD media bar's face, as in makd's Jellyfin Media Bar.
+    # Latin subsets, unhinted, in the two weights the bar draws.
+    - family: ArchivoNarrow
+      fonts:
+        - asset: assets/fonts/ArchivoNarrow-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/ArchivoNarrow-Bold.ttf
+          weight: 700
     # The After Hours arcade's display face.
     - family: Jersey10
       fonts:

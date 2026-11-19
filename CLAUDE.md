@@ -41,7 +41,14 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-14, fork main at 13091f3e9 (174 commits), merged
+Last upstream sync: 2026-11-19, fork main at e506b7b1a (101 commits), merged
+into `aether-fel` as 2663dc941 (rollback point before it: 69ec0f2eb), no
+engine change. One conflict in `video_player_screen.dart`'s key handler:
+upstream made the Space hold-for-speed call run on every platform; kept the
+fork's E key block above it and dropped the `isTV` guard. DMG run 44454605241
+(Xcode 26.3). Plex tests (89) passed; `flutter analyze lib` 0 errors.
+
+Previous sync: 2026-11-14, fork main at 13091f3e9 (174 commits), merged
 into `aether-fel` as 6f61835fe (rollback point before it: 13c894a00) with no
 conflicts and no engine change; upstream's only macOS change was Firebase
 package pins in Package.resolved. DMG run 43652846497 passed (Xcode 26.3).

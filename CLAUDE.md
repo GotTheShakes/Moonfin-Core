@@ -41,7 +41,14 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-19, fork main at e506b7b1a (101 commits), merged
+Last upstream sync: 2026-11-20, fork main at c39fc083b (10 commits), merged
+into `aether-fel` as 2f84b7dcb (rollback point before it: 5166def3f) with no
+conflicts and no engine or macOS change. It bumped pub packages (new majors of
+device_info_plus, cupertino_icons, flutter_widget_from_html_core) and fixed the
+OSD lock re-engaging. `flutter analyze lib test` 0 errors, Plex tests (89)
+passed. DMG run 44668631904.
+
+Previous sync: 2026-11-19, fork main at e506b7b1a (101 commits), merged
 into `aether-fel` as 2663dc941 (rollback point before it: 69ec0f2eb), no
 engine change. One conflict in `video_player_screen.dart`'s key handler:
 upstream made the Space hold-for-speed call run on every platform; kept the

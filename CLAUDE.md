@@ -41,7 +41,7 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-23, fork main at a359667eb (26 commits), merged
+Last upstream sync: 2026-11-22, fork main at a359667eb (26 commits), merged
 into `aether-fel` as 0aa57e11e (rollback point before it: 597bd4ba6) with no
 conflicts and no engine or macOS change (build.yml changes are Linux only:
 bundled libmpv, ARM64 on 24.04, snap launch check). `flutter analyze lib test`

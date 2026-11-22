@@ -147,7 +147,10 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
   monitored in Sonarr with no episodes on disk gave HTTP 404), so the id is
   now confirmed with `itemsApi.getItem` before the swap; a failing id stays
   on the Seerr page and is not asked for again (`_swapIfInLibrary`).
-  Built in DMG run 45059615763 (passed).
+  DMG run 45059615763 hung on the loading skeleton for such a series: the
+  check's `whenComplete` cleanup returned the removed future, so it waited on
+  itself whenever the server answered after Seerr's load. Fixed; the tests now
+  answer the library check after a delay.
 
 - **FEL A/B key (macOS):** pressing **E** during playback flips
   `AetherEngine.felResidualEnabled` (SPI `Diagnostics`, via

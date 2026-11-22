@@ -73,6 +73,8 @@ void _serverHas(_ItemsApi items, Set<String> ids) {
     ),
   ).thenAnswer((inv) async {
     final id = inv.positionalArguments.first as String;
+    // A real server answers after Seerr's own load has finished.
+    await Future<void>.delayed(const Duration(milliseconds: 50));
     if (ids.contains(id)) return {'Id': id};
     throw Exception('Server returned HTTP 404');
   });
@@ -118,7 +120,7 @@ void main() {
         tmdbRepository: tmdb,
       );
       vm.load();
-      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 1));
       expect(vm.isSeerrOnly, isTrue);
       expect(vm.seerrResolvedLibraryId, isNull);
 
@@ -146,7 +148,7 @@ void main() {
         tmdbRepository: tmdb,
       );
       vm.load();
-      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 1));
       expect(vm.seerrResolvedLibraryId, '12345');
       vm.dispose();
     });
@@ -165,7 +167,7 @@ void main() {
         tmdbRepository: tmdb,
       );
       vm.load();
-      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 1));
       expect(vm.seerrResolvedLibraryId, isNull);
       expect(vm.isSeerrOnly, isTrue);
       expect(vm.item, isNotNull);
@@ -197,7 +199,7 @@ void main() {
         tmdbRepository: tmdb,
       );
       vm.load();
-      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 1));
       expect(vm.seerrResolvedLibraryId, isNull);
       expect(vm.error, isNull);
       expect(vm.state, ItemDetailState.ready);

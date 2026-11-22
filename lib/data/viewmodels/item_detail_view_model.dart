@@ -733,8 +733,12 @@ class ItemDetailViewModel extends ChangeNotifier {
   /// page is swapping to the library item.
   Future<bool> _swapIfInLibrary(String id) {
     if (_staleSeerrLibraryIds.contains(id)) return Future.value(false);
+    // The cleanup must not return the removed future: whenComplete waits on
+    // a returned future, and this one would be waiting on itself.
     return _seerrLibraryChecks[id] ??= _checkSeerrLibraryId(id).whenComplete(
-      () => _seerrLibraryChecks.remove(id),
+      () {
+        _seerrLibraryChecks.remove(id);
+      },
     );
   }
 

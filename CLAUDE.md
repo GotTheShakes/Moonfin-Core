@@ -147,6 +147,7 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
   monitored in Sonarr with no episodes on disk gave HTTP 404), so the id is
   now confirmed with `itemsApi.getItem` before the swap; a failing id stays
   on the Seerr page and is not asked for again (`_swapIfInLibrary`).
+  Built in DMG run 45059615763 (passed).
 
 - **FEL A/B key (macOS):** pressing **E** during playback flips
   `AetherEngine.felResidualEnabled` (SPI `Diagnostics`, via

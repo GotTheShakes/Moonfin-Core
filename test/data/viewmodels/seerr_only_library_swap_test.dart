@@ -40,6 +40,20 @@ class _FakeSeerr extends Fake implements SeerrRepository {
 
   @override
   Future<SeerrMovieDetails> getMovieDetails(int tmdbId) async => _details;
+
+  SeerrTvDetails get _tv => SeerrTvDetails(
+    id: 1399,
+    name: 'A Series',
+    numberOfSeasons: 2,
+    mediaInfo: mediaInfo,
+  );
+
+  @override
+  Future<(SeerrTvDetails, bool)> getTvDetailsWithWatchlist(int tmdbId) async =>
+      (_tv, false);
+
+  @override
+  Future<SeerrTvDetails> getTvDetails(int tmdbId) async => _tv;
 }
 
 class _FakePrefs extends Fake implements SeerrPreferences {}
@@ -166,6 +180,27 @@ void main() {
           fields: any(named: 'fields'),
         ),
       ).called(1);
+      vm.dispose();
+    });
+  });
+
+  test('a series whose library id is stale shows its Seerr page', () {
+    fakeAsync((async) {
+      when(() => client.serverType).thenReturn(ServerType.plex);
+      seerr.mediaInfo = const SeerrMediaInfo(status: 4, ratingKey: 'gone');
+      final tmdb = TmdbRepository(client);
+      final vm = ItemDetailViewModel(
+        itemId: 'tmdb:tv:1399',
+        client: client,
+        mutations: ItemMutationRepository(client),
+        mdbListRepository: MdbListRepository(client, tmdb),
+        tmdbRepository: tmdb,
+      );
+      vm.load();
+      async.flushMicrotasks();
+      expect(vm.seerrResolvedLibraryId, isNull);
+      expect(vm.error, isNull);
+      expect(vm.state, ItemDetailState.ready);
       vm.dispose();
     });
   });

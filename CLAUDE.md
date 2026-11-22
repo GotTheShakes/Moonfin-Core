@@ -46,6 +46,7 @@ into `aether-fel` as 0aa57e11e (rollback point before it: 597bd4ba6) with no
 conflicts and no engine or macOS change (build.yml changes are Linux only:
 bundled libmpv, ARM64 on 24.04, snap launch check). `flutter analyze lib test`
 0 errors; Plex tests (89), the Seerr swap test and test/playback (1364) passed.
+DMG run 44980238322 passed (Xcode 26.3).
 
 Previous sync: 2026-11-20, fork main at c39fc083b (10 commits), merged
 into `aether-fel` as 2f84b7dcb (rollback point before it: 5166def3f) with no

@@ -41,7 +41,13 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-20, fork main at c39fc083b (10 commits), merged
+Last upstream sync: 2026-11-23, fork main at a359667eb (26 commits), merged
+into `aether-fel` as 0aa57e11e (rollback point before it: 597bd4ba6) with no
+conflicts and no engine or macOS change (build.yml changes are Linux only:
+bundled libmpv, ARM64 on 24.04, snap launch check). `flutter analyze lib test`
+0 errors; Plex tests (89), the Seerr swap test and test/playback (1364) passed.
+
+Previous sync: 2026-11-20, fork main at c39fc083b (10 commits), merged
 into `aether-fel` as 2f84b7dcb (rollback point before it: 5166def3f) with no
 conflicts and no engine or macOS change. It bumped pub packages (new majors of
 device_info_plus, cupertino_icons, flutter_widget_from_html_core) and fixed the

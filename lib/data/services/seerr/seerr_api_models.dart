@@ -747,6 +747,11 @@ class SeerrMediaInfo {
   final String? jellyfinMediaId;
   final String? jellyfinMediaId4k;
 
+  /// Plex's id for the library copy (Seerr fills these instead of the
+  /// jellyfinMediaId fields when it is connected to Plex).
+  final String? ratingKey;
+  final String? ratingKey4k;
+
   const SeerrMediaInfo({
     this.id,
     this.tmdbId,
@@ -759,6 +764,8 @@ class SeerrMediaInfo {
     this.seasons,
     this.jellyfinMediaId,
     this.jellyfinMediaId4k,
+    this.ratingKey,
+    this.ratingKey4k,
   });
 
   factory SeerrMediaInfo.fromJson(Map<String, dynamic> json) =>

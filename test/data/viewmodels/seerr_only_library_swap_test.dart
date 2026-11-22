@@ -66,6 +66,7 @@ void main() {
     );
     GetIt.instance.registerSingleton<SeerrPreferences>(_FakePrefs());
     client = _Client();
+    when(() => client.serverType).thenReturn(ServerType.jellyfin);
   });
 
   tearDown(() => GetIt.instance.reset());
@@ -92,6 +93,25 @@ void main() {
       async.elapse(const Duration(seconds: 30));
       expect(vm.seerrResolvedLibraryId, 'library-item');
 
+      vm.dispose();
+    });
+  });
+
+  test('on Plex, Seerr\'s ratingKey opens the library copy', () {
+    fakeAsync((async) {
+      when(() => client.serverType).thenReturn(ServerType.plex);
+      seerr.mediaInfo = const SeerrMediaInfo(status: 5, ratingKey: '12345');
+      final tmdb = TmdbRepository(client);
+      final vm = ItemDetailViewModel(
+        itemId: 'tmdb:movie:299534',
+        client: client,
+        mutations: ItemMutationRepository(client),
+        mdbListRepository: MdbListRepository(client, tmdb),
+        tmdbRepository: tmdb,
+      );
+      vm.load();
+      async.flushMicrotasks();
+      expect(vm.seerrResolvedLibraryId, '12345');
       vm.dispose();
     });
   });

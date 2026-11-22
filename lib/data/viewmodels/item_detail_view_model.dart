@@ -721,11 +721,18 @@ class ItemDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Seerr hands back the media server's own id for a title it knows is there.
-  static String? _libraryIdFromSeerr(SeerrMediaDetailState state) {
-    final id =
-        state.mediaInfo?.jellyfinMediaId ?? state.mediaInfo?.jellyfinMediaId4k;
-    return id == null || id.isEmpty ? null : id;
+  // Seerr hands back the media server's own id for a title it knows is there:
+  // jellyfinMediaId for Jellyfin and Emby, ratingKey for Plex.
+  String? _libraryIdFromSeerr(SeerrMediaDetailState state) {
+    final info = state.mediaInfo;
+    if (info == null) return null;
+    final ids = _client.serverType == ServerType.plex
+        ? [info.ratingKey, info.ratingKey4k]
+        : [info.jellyfinMediaId, info.jellyfinMediaId4k];
+    for (final id in ids) {
+      if (id != null && id.isNotEmpty) return id;
+    }
+    return null;
   }
 
   ItemDetailViewModel({

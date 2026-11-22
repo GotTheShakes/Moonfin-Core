@@ -128,6 +128,16 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
 
 ## Open items
 
+- **Seerr titles already in a Plex library** (fork fix, 2026-11-22, not yet
+  confirmed by the owner). Opening a Seerr title swaps to the library item via
+  `ItemDetailViewModel._libraryIdFromSeerr`, which upstream reads only from
+  `jellyfinMediaId`. Seerr on Plex fills `ratingKey`/`ratingKey4k` instead
+  (the Plex item id here), so Plex users got the Seerr-only page with just a
+  trailer button. `SeerrMediaInfo` now carries `ratingKey`/`ratingKey4k`
+  (`.g.dart` edited by hand) and Plex clients use them. Test in
+  `test/data/viewmodels/seerr_only_library_swap_test.dart`. Worth reporting
+  upstream.
+
 - **FEL A/B key (macOS):** pressing **E** during playback flips
   `AetherEngine.felResidualEnabled` (SPI `Diagnostics`, via
   `toggleFelResidual` on the `moonfin/ios_aether_control` channel, handled

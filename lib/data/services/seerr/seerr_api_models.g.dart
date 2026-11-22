@@ -640,6 +640,8 @@ SeerrMediaInfo _$SeerrMediaInfoFromJson(Map<String, dynamic> json) =>
           .toList(),
       jellyfinMediaId: json['jellyfinMediaId'] as String?,
       jellyfinMediaId4k: json['jellyfinMediaId4k'] as String?,
+      ratingKey: json['ratingKey'] as String?,
+      ratingKey4k: json['ratingKey4k'] as String?,
     );
 
 Map<String, dynamic> _$SeerrMediaInfoToJson(SeerrMediaInfo instance) =>
@@ -655,6 +657,8 @@ Map<String, dynamic> _$SeerrMediaInfoToJson(SeerrMediaInfo instance) =>
       'seasons': instance.seasons,
       'jellyfinMediaId': instance.jellyfinMediaId,
       'jellyfinMediaId4k': instance.jellyfinMediaId4k,
+      'ratingKey': instance.ratingKey,
+      'ratingKey4k': instance.ratingKey4k,
     };
 
 SeerrPersonDetails _$SeerrPersonDetailsFromJson(Map<String, dynamic> json) =>

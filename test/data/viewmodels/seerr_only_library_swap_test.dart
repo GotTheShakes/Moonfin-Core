@@ -46,11 +46,30 @@ class _FakePrefs extends Fake implements SeerrPreferences {}
 
 class _Client extends Mock implements MediaServerClient {}
 
+class _ItemsApi extends Mock implements ItemsApi {}
+
+/// Answers for the ids in [ids] and 404s for anything else, like a server
+/// that dropped an item Seerr still points at.
+void _serverHas(_ItemsApi items, Set<String> ids) {
+  when(
+    () => items.getItem(
+      any(),
+      mediaSourceId: any(named: 'mediaSourceId'),
+      fields: any(named: 'fields'),
+    ),
+  ).thenAnswer((inv) async {
+    final id = inv.positionalArguments.first as String;
+    if (ids.contains(id)) return {'Id': id};
+    throw Exception('Server returned HTTP 404');
+  });
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _FakeSeerr seerr;
   late _Client client;
+  late _ItemsApi items;
 
   setUp(() async {
     await GetIt.instance.reset();
@@ -67,6 +86,9 @@ void main() {
     GetIt.instance.registerSingleton<SeerrPreferences>(_FakePrefs());
     client = _Client();
     when(() => client.serverType).thenReturn(ServerType.jellyfin);
+    items = _ItemsApi();
+    when(() => client.itemsApi).thenReturn(items);
+    _serverHas(items, {'library-item', '12345'});
   });
 
   tearDown(() => GetIt.instance.reset());
@@ -112,6 +134,38 @@ void main() {
       vm.load();
       async.flushMicrotasks();
       expect(vm.seerrResolvedLibraryId, '12345');
+      vm.dispose();
+    });
+  });
+
+  test('a library id the server no longer has keeps the Seerr page', () {
+    fakeAsync((async) {
+      when(() => client.serverType).thenReturn(ServerType.plex);
+      seerr.mediaInfo = const SeerrMediaInfo(status: 3, ratingKey: 'gone');
+      final tmdb = TmdbRepository(client);
+      final vm = ItemDetailViewModel(
+        itemId: 'tmdb:movie:299534',
+        client: client,
+        mutations: ItemMutationRepository(client),
+        mdbListRepository: MdbListRepository(client, tmdb),
+        tmdbRepository: tmdb,
+      );
+      vm.load();
+      async.flushMicrotasks();
+      expect(vm.seerrResolvedLibraryId, isNull);
+      expect(vm.isSeerrOnly, isTrue);
+      expect(vm.item, isNotNull);
+
+      // A refresh asks again only once Seerr points at a different id.
+      async.elapse(const Duration(seconds: 30));
+      expect(vm.seerrResolvedLibraryId, isNull);
+      verify(
+        () => items.getItem(
+          'gone',
+          mediaSourceId: any(named: 'mediaSourceId'),
+          fields: any(named: 'fields'),
+        ),
+      ).called(1);
       vm.dispose();
     });
   });

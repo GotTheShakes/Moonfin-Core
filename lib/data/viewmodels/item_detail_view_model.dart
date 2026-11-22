@@ -716,9 +716,41 @@ class ItemDetailViewModel extends ChangeNotifier {
   void _onSeerrChanged() {
     final seerr = _seerr;
     if (_isSeerrOnly && _seerrResolvedLibraryId == null && seerr != null) {
-      _seerrResolvedLibraryId = _libraryIdFromSeerr(seerr.state);
+      final candidate = _libraryIdFromSeerr(seerr.state);
+      if (candidate != null) unawaited(_swapIfInLibrary(candidate));
     }
     notifyListeners();
+  }
+
+  /// Ids Seerr reported that the server no longer has, so a refresh does not
+  /// ask for them again, and checks in flight, shared by load and refresh.
+  final Set<String> _staleSeerrLibraryIds = {};
+  final Map<String, Future<bool>> _seerrLibraryChecks = {};
+
+  /// Seerr keeps a title's library id after the server drops the item (a
+  /// series whose episodes were all deleted, still monitored in Sonarr), so
+  /// the id is only trusted once the server confirms it. Returns whether the
+  /// page is swapping to the library item.
+  Future<bool> _swapIfInLibrary(String id) {
+    if (_staleSeerrLibraryIds.contains(id)) return Future.value(false);
+    return _seerrLibraryChecks[id] ??= _checkSeerrLibraryId(id).whenComplete(
+      () => _seerrLibraryChecks.remove(id),
+    );
+  }
+
+  Future<bool> _checkSeerrLibraryId(String id) async {
+    try {
+      await _client.itemsApi.getItem(id);
+    } catch (_) {
+      _staleSeerrLibraryIds.add(id);
+      return false;
+    }
+    if (_isDisposed) return false;
+    if (_seerrResolvedLibraryId == null) {
+      _seerrResolvedLibraryId = id;
+      notifyListeners();
+    }
+    return true;
   }
 
   // Seerr hands back the media server's own id for a title it knows is there:
@@ -889,11 +921,8 @@ class ItemDetailViewModel extends ChangeNotifier {
     // Nothing else is set for a title already in the library, so the screen
     // stays on its loading state until it has swapped itself out.
     final libraryId = _libraryIdFromSeerr(state);
-    if (libraryId != null) {
-      _seerrResolvedLibraryId = libraryId;
-      notifyListeners();
-      return;
-    }
+    if (libraryId != null && await _swapIfInLibrary(libraryId)) return;
+    if (_isDisposed) return;
 
     _item = AggregatedItem(
       id: itemId,

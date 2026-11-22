@@ -143,7 +143,10 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
   trailer button. `SeerrMediaInfo` now carries `ratingKey`/`ratingKey4k`
   (`.g.dart` edited by hand) and Plex clients use them. Test in
   `test/data/viewmodels/seerr_only_library_swap_test.dart`. Worth reporting
-  upstream.
+  upstream. Seerr keeps that id after the server drops the item (a series
+  monitored in Sonarr with no episodes on disk gave HTTP 404), so the id is
+  now confirmed with `itemsApi.getItem` before the swap; a failing id stays
+  on the Seerr page and is not asked for again (`_swapIfInLibrary`).
 
 - **FEL A/B key (macOS):** pressing **E** during playback flips
   `AetherEngine.felResidualEnabled` (SPI `Diagnostics`, via

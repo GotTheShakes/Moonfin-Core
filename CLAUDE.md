@@ -152,6 +152,8 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
   itself whenever the server answered after Seerr's load. Fixed; the tests now
   answer the library check after a delay. Fix built in DMG run 45073219903
   (passed).
+  Owner confirmed on that build (2026-11-23): the stale series now opens its
+  Seerr page.
 
 - **FEL A/B key (macOS):** pressing **E** during playback flips
   `AetherEngine.felResidualEnabled` (SPI `Diagnostics`, via

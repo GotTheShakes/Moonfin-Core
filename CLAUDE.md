@@ -135,8 +135,8 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
 
 ## Open items
 
-- **Seerr titles already in a Plex library** (fork fix, 2026-11-22, not yet
-  confirmed by the owner). Opening a Seerr title swaps to the library item via
+- **Seerr titles already in a Plex library** (fork fix, 2026-11-22, confirmed
+  by the owner 2026-11-23). Opening a Seerr title swaps to the library item via
   `ItemDetailViewModel._libraryIdFromSeerr`, which upstream reads only from
   `jellyfinMediaId`. Seerr on Plex fills `ratingKey`/`ratingKey4k` instead
   (the Plex item id here), so Plex users got the Seerr-only page with just a
@@ -153,7 +153,7 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
   answer the library check after a delay. Fix built in DMG run 45073219903
   (passed).
   Owner confirmed on that build (2026-11-23): the stale series now opens its
-  Seerr page.
+  Seerr page, and a movie in the library opens its library page and plays.
 
 - **FEL A/B key (macOS):** pressing **E** during playback flips
   `AetherEngine.felResidualEnabled` (SPI `Diagnostics`, via

@@ -203,6 +203,20 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
 - The owner already confirmed (log) that Compose Dolby Vision engages on a
   Profile 7 file: `AE#455: serving HEVC DV Profile 7 (converted to 8.1) as
   Profile 5`. Plex direct played it. They saw no visible difference.
+- **FEL landscape check (2026-11-25).** No fork or app documents two-layer FEL
+  playing on a Mac. Moonfin upstream (3.1.x), Strimr and the RadicalMuffinMan
+  README describe the 8.1 curve fold only; Silo issue #841 (Apple TV, Oct 19)
+  asks for the dual-layer flags, unanswered. Upstream AetherEngine is at 7.75.0
+  (this fork pins the 7.62.1 fork). Its `docs/dolby-vision-fel.md` recommends
+  the curve fold for distributed apps (MMR patents to 2032; the fold recovers
+  per-tone brightness, not local detail; dual-layer recovers everything) and
+  says macOS presentation of the composed picture's metadata is unmeasured.
+  `LoadOptions.dualLayerRoute = .avPlayerOutput` (since 7.56.0, present in the
+  pinned engine, default `.softwareHost`) lets AVPlayer play the base layer and
+  audio while the engine composes the EL onto its frames; run on macOS only;
+  no PiP, a few base-layer frames after a seek, more memory. Not wired up here;
+  a candidate experiment, only with the owner's go-ahead. FEL fixes after the
+  pin: 7.63.0 per-load fold switch, 7.67.0/7.67.1 composer and fold crash fixes.
 - **`DolbyVisionStillReshaping` trait.** AetherPlayer enables it, this fork does
   not. Find out what it changes before adding.
 - Whether Plex direct plays TrueHD on macOS depends on Moonfin's Plex device

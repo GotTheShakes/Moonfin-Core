@@ -49,6 +49,7 @@ conflicts, both kept: `ItemDetailViewModel._onSeerrChanged` (the fork's
 upstream's new `getAccessWindow`). Same commit fixes the back arrow after an
 episode finishes (see Open items). `flutter analyze lib test` 0 errors; Plex
 (89) and test/playback + test/data + detail + focus (3206) passed.
+DMG run 45728353006 passed (Xcode 26.3).
 
 Previous sync: 2026-11-22, fork main at a359667eb (26 commits), merged
 into `aether-fel` as 0aa57e11e (rollback point before it: 597bd4ba6) with no

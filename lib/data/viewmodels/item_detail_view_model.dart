@@ -718,6 +718,17 @@ class ItemDetailViewModel extends ChangeNotifier {
     if (_isSeerrOnly && _seerrResolvedLibraryId == null && seerr != null) {
       final candidate = _libraryIdFromSeerr(seerr.state);
       if (candidate != null) unawaited(_swapIfInLibrary(candidate));
+      // Public settings can arrive after the title. Keep its rating in step
+      // with the discovery country when that happens or details refresh.
+      final item = _item;
+      final rating = seerr.state.parentalRating;
+      if (item != null && item.officialRating != rating) {
+        _item = AggregatedItem(
+          id: item.id,
+          serverId: item.serverId,
+          rawData: {...item.rawData, 'OfficialRating': rating},
+        );
+      }
     }
     notifyListeners();
   }
@@ -971,6 +982,7 @@ class ItemDetailViewModel extends ChangeNotifier {
       if (year != null) 'ProductionYear': year,
       'PremiereDate': s.releaseDate ?? s.firstAirDate,
       'CommunityRating': s.voteAverage,
+      'OfficialRating': s.parentalRating,
       'Genres': [for (final g in s.genres) g.name],
       'Studios': [for (final n in s.networks) {'Name': n.name}],
       'Taglines': [?s.tagline],

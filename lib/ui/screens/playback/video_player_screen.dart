@@ -3030,7 +3030,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (waitForBackKeyUp) {
-          _cancelPopAfterBackKeyUp = runAfterBackKeyUp(_popPlayerRoute);
+          // macOS can report an Escape as still held after the system took
+          // its key up (leaving full screen does this), so the wait there
+          // gives up rather than leave a finished episode on screen forever.
+          _cancelPopAfterBackKeyUp = runAfterBackKeyUp(
+            _popPlayerRoute,
+            timeout: PlatformDetection.isMacOS
+                ? const Duration(milliseconds: 600)
+                : null,
+          );
         } else {
           _popPlayerRoute();
         }
@@ -3085,6 +3093,21 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       if (!mounted) return;
       _popPlayerRoute();
     });
+  }
+
+  /// The on-screen back arrow. A click never waits for a back key's key up.
+  /// If an exit already started (a finished episode, say) and is still
+  /// waiting, the click leaves at once instead of doing nothing.
+  void _onBackButtonPressed() {
+    if (_isStopping) {
+      if (_readyToPop) {
+        _cancelPopAfterBackKeyUp?.call();
+        _cancelPopAfterBackKeyUp = null;
+        _popPlayerRoute();
+      }
+      return;
+    }
+    unawaited(_exitPlayback(waitForBackKeyUp: false));
   }
 
   void _popPlayerRoute() {
@@ -5222,7 +5245,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           children: [
             if (!PlatformDetection.useLeanbackUi && !PlatformDetection.isTV)
               IconButton(
-                onPressed: () => _exitPlayback(waitForBackKeyUp: false),
+                onPressed: _onBackButtonPressed,
                 tooltip: PlatformDetection.useDesktopUi
                     ? _tooltipMessage(l10n.back, shortcut: 'Esc')
                     : null,

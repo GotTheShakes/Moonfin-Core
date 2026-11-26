@@ -53,4 +53,38 @@ void main() {
     expect(ran, 0);
     expect(handled, isFalse);
   });
+
+  // macOS can keep Escape in the pressed set after the system consumed its
+  // key up, so a finished episode's exit waited forever.
+  testWidgets('a timeout runs the action when the key up never comes', (
+    tester,
+  ) async {
+    var ran = 0;
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
+    runAfterBackKeyUp(
+      () => ran++,
+      timeout: const Duration(milliseconds: 600),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(ran, 0);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(ran, 1);
+
+    // The late key up neither runs it again nor gets swallowed.
+    final handled = await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
+    expect(ran, 1);
+    expect(handled, isFalse);
+  });
+
+  testWidgets('a key up before the timeout runs it once', (tester) async {
+    var ran = 0;
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
+    runAfterBackKeyUp(
+      () => ran++,
+      timeout: const Duration(milliseconds: 600),
+    );
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(seconds: 1));
+    expect(ran, 1);
+  });
 }

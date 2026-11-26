@@ -41,7 +41,16 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-22, fork main at a359667eb (26 commits), merged
+Last upstream sync: 2026-11-26, fork main at 5cd92a194 (199 commits), merged
+into `aether-fel` (rollback point before it: 0413e1640), no engine change. Two
+conflicts, both kept: `ItemDetailViewModel._onSeerrChanged` (the fork's
+`_swapIfInLibrary` check plus upstream's parental-rating refresh) and
+`plex_apis.dart` (the fork's `_defaultConfiguration` store reader plus
+upstream's new `getAccessWindow`). Same commit fixes the back arrow after an
+episode finishes (see Open items). `flutter analyze lib test` 0 errors; Plex
+(89) and test/playback + test/data + detail + focus (3206) passed.
+
+Previous sync: 2026-11-22, fork main at a359667eb (26 commits), merged
 into `aether-fel` as 0aa57e11e (rollback point before it: 597bd4ba6) with no
 conflicts and no engine or macOS change (build.yml changes are Linux only:
 bundled libmpv, ARM64 on 24.04, snap launch check). `flutter analyze lib test`
@@ -170,6 +179,12 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
   (an Escape whose key up the system consumed), so a mouse click on the back
   arrow waited forever. The on-screen back button now passes
   `waitForBackKeyUp: false`. Worth reporting upstream.
+  Second case (2026-11-26): a finished episode exits through
+  `sessionEndedStream` -> `_exitPlayback()`, which waited on the same stale
+  Escape and sat on a 0:00 screen; the arrow then did nothing because
+  `_isStopping` was set. `runAfterBackKeyUp` now takes a `timeout` (600 ms on
+  macOS), and the arrow (`_onBackButtonPressed`) pops at once when an exit is
+  already waiting. Tests in `test/focus/back_key_release_test.dart`.
 
 - **Confirmed by the owner (run 42527709861, branch `aether-fel`):** the log
   showed `optional components built in: TrueHDObjectAudio=true

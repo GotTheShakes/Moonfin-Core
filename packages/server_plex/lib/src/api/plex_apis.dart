@@ -214,6 +214,9 @@ class PlexUsersApi implements UsersApi {
     hidePlayedInLatest: false,
   );
 
+  @override
+  Future<AccessWindow?> getAccessWindow() async => null;
+
   /// Plex keeps no library visibility or order for an account, so what the
   /// user sets in the app is kept on this device. A missing or unreadable
   /// entry reads as the defaults.

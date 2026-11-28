@@ -59,6 +59,7 @@ reload" test was kept on upstream's store. The audio settings screen keeps the
 fork's macOS Height channels switch next to upstream's iOS/tvOS Binaural
 headphones switch. `flutter analyze lib test` 0 errors; Plex (88) and
 test/playback + test/data + detail + focus (3318) passed.
+DMG run 46105134481 passed (Xcode 26.3).
 
 Previous sync: 2026-11-26, fork main at 5cd92a194 (199 commits), merged
 into `aether-fel` (rollback point before it: 0413e1640), no engine change. Two

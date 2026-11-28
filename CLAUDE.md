@@ -41,7 +41,26 @@ after pushing if a hook complains about unpushed commits.
    re-added remote reference from the .pbxproj, or the build stays on the old
    engine or fails to resolve. Check that the traits still compile.
 
-Last upstream sync: 2026-11-26, fork main at 5cd92a194 (199 commits), merged
+Last upstream sync: 2026-11-28, fork main at f9ef4f098 (87 commits), merged
+into `aether-fel` (rollback point before it: 7e1400883). It brought **AetherEngine
+b0943d2** (RadicalMuffinMan fork at 7.76.0; was 34f149b / 7.62.1), now pinned
+in `macos/AetherEngineTraits/Package.swift` with traits TrueHDObjectAudio,
+DualLayerDolbyVision and DolbyVisionFelCurves (the engine's new default trait;
+naming traits replaces defaults, and the engine also `.define`s it). The
+re-added direct engine reference in the .pbxproj was dropped again. The APIs
+the fork uses (`felResidualEnabled` SPI, `preferDualLayerDolbyVision`,
+`forceDolbyVisionOnNonDVDisplay`, `objectAudioRendering .render(.l916)`,
+`OptionalComponent`) are all still there. Conflicts: upstream now keeps Plex
+library visibility/order itself (`PlexUserConfigurationStore`, per server and
+user in UserPreferences), so the fork's `PlexConfigStore` /
+`_PlexPreferencesStore` was retired in favour of upstream's (owner's saved
+Plex visibility may need setting once more); a "hiding Live TV survives a
+reload" test was kept on upstream's store. The audio settings screen keeps the
+fork's macOS Height channels switch next to upstream's iOS/tvOS Binaural
+headphones switch. `flutter analyze lib test` 0 errors; Plex (88) and
+test/playback + test/data + detail + focus (3318) passed.
+
+Previous sync: 2026-11-26, fork main at 5cd92a194 (199 commits), merged
 into `aether-fel` (rollback point before it: 0413e1640), no engine change. Two
 conflicts, both kept: `ItemDetailViewModel._onSeerrChanged` (the fork's
 `_swapIfInLibrary` check plus upstream's parental-rating refresh) and
@@ -134,7 +153,9 @@ The fork's "Deploy Web To GitHub Pages" workflow is disabled (no Pages site).
    `AetherVideoChannel.swift` parses them; `AetherPlayerWrapper.swift` applies
    them inside `#if os(macOS)` where `LoadOptions` is built. The explainer
    strings are English only (`lib/l10n/app_en.arb`).
-4. **Plex library visibility bug** (Live TV toggle did not persist).
+4. **Plex library visibility bug** (Live TV toggle did not persist). Superseded
+   on 2026-11-28 by upstream's own `PlexUserConfigurationStore`; the text below
+   describes the retired fork version.
    `PlexUsersApi.updateUserConfiguration` was empty. It now keeps the
    configuration on the device through a `PlexConfigStore` (SharedPreferences
    backed, `_PlexPreferencesStore` in `lib/data/services/media_server_client_factory.dart`),

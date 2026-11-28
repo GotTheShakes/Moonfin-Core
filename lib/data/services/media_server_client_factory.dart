@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:server_core/server_core.dart';
@@ -5,8 +7,9 @@ import 'package:server_emby/server_emby.dart';
 import 'package:server_jellyfin/server_jellyfin.dart';
 import 'package:server_plex/server_plex.dart';
 import 'package:server_silo/server_silo.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:server_audiobookshelf/server_audiobookshelf.dart';
 
+import '../../preference/user_preferences.dart';
 import '../../util/platform_detection.dart';
 import '../../util/server_url.dart';
 import '../offline/connectivity_aware_media_server_client.dart';
@@ -60,6 +63,7 @@ class MediaServerClientFactory {
     }
     return _clients.putIfAbsent(serverId, () {
       return _createClient(
+        serverId: serverId,
         serverType: serverType,
         baseUrl: normalizedBaseUrl,
       );
@@ -97,10 +101,15 @@ class MediaServerClientFactory {
   }
 
   MediaServerClient _createClient({
+    required String serverId,
     required ServerType serverType,
     required String baseUrl,
   }) {
-    final raw = _createRawClient(serverType: serverType, baseUrl: baseUrl);
+    final raw = _createRawClient(
+      serverId: serverId,
+      serverType: serverType,
+      baseUrl: baseUrl,
+    );
     final getIt = GetIt.instance;
     // Background isolates skip the offline stack, so there's nothing to route
     // to and the raw client is all they need.
@@ -120,6 +129,7 @@ class MediaServerClientFactory {
   }
 
   MediaServerClient _createRawClient({
+    required String serverId,
     required ServerType serverType,
     required String baseUrl,
   }) {
@@ -147,14 +157,20 @@ class MediaServerClientFactory {
         return PlexMediaServerClient(
           baseUrl: baseUrl,
           deviceInfo: deviceInfo,
-          configStore: _PlexPreferencesStore(),
           gamesApi: plexMoonbaseGamesApi,
+          configStore: _plexConfigStore(serverId),
         );
       case ServerType.silo:
         return SiloMediaServerClient(
           baseUrl: baseUrl,
           deviceInfo: deviceInfo,
           platform: _siloDevicePlatform(),
+        );
+      case ServerType.audiobookshelf:
+        return AbsMediaServerClient(
+          baseUrl: baseUrl,
+          deviceInfo: deviceInfo,
+          store: _plexConfigStore(serverId),
         );
     }
   }
@@ -171,6 +187,27 @@ class MediaServerClientFactory {
   }
 }
 
+/// Keeps each Plex or Audiobookshelf user's configuration in this device's
+/// preferences, under [serverId].
+PlexUserConfigurationStore _plexConfigStore(String serverId) {
+  UserPreferences? prefs() => GetIt.instance.isRegistered<UserPreferences>()
+      ? GetIt.instance<UserPreferences>()
+      : null;
+  return (
+    read: (userId) {
+      final json = prefs()?.get(
+        UserPreferences.plexUserConfiguration(serverId, userId),
+      );
+      if (json == null || json.isEmpty) return null;
+      return jsonDecode(json) as Map<String, dynamic>;
+    },
+    write: (userId, json) async => prefs()?.set(
+      UserPreferences.plexUserConfiguration(serverId, userId),
+      jsonEncode(json),
+    ),
+  );
+}
+
 /// The platform Silo records for this device (`X-Silo-Device-Platform`),
 /// named the same way as the client name in `lib/di/injection.dart`.
 String _siloDevicePlatform() {
@@ -184,20 +221,4 @@ String _siloDevicePlatform() {
   if (PlatformDetection.isWindows) return 'Windows';
   if (PlatformDetection.isLinux) return 'Linux';
   return 'Unknown';
-}
-
-/// Keeps a Plex account's library visibility and order on this device.
-class _PlexPreferencesStore implements PlexConfigStore {
-  @override
-  Future<String?> read(String key) async =>
-      (await SharedPreferences.getInstance()).getString(key);
-
-  @override
-  Future<void> write(String key, String value) async {
-    final saved = await (await SharedPreferences.getInstance()).setString(
-      key,
-      value,
-    );
-    if (!saved) throw StateError('Could not save $key');
-  }
 }

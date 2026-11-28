@@ -245,6 +245,18 @@ class _AudioPreferencesScreenState extends State<_AudioPreferencesScreen> {
                 subtitle: l10n.compressDynamicRange,
                 icon: Icons.nights_stay,
               ),
+              if (PlatformDetection.isApple || PlatformDetection.isAppleTV)
+                StringPickerPreferenceTile(
+                  preference: UserPreferences.loudnessTargetLufs,
+                  title: l10n.loudnessTarget,
+                  description: l10n.loudnessTargetDescription,
+                  icon: Icons.graphic_eq,
+                  options: {
+                    'off': l10n.off,
+                    '-24': l10n.loudnessTargetStandard,
+                    '-16': l10n.loudnessTargetLoud,
+                  },
+                ),
             ],
           ),
           _SectionHeader(l10n.settingsAudioStreamSection),
@@ -350,6 +362,13 @@ class _AudioPreferencesScreenState extends State<_AudioPreferencesScreen> {
                     title: l10n.settingsHeightChannelsTitle,
                     subtitle: l10n.settingsHeightChannelsDescription,
                     icon: Icons.spatial_audio_off,
+                  ),
+                if (PlatformDetection.isIOS || PlatformDetection.isAppleTV)
+                  SwitchPreferenceTile(
+                    preference: UserPreferences.binauralHeadphones,
+                    title: l10n.binauralHeadphones,
+                    subtitle: l10n.binauralHeadphonesSubtitle,
+                    icon: Icons.headphones,
                   ),
               ],
             ),

@@ -5,6 +5,7 @@ import 'package:server_plex/src/api/plex_admin_items_api.dart';
 import 'package:server_plex/src/api/plex_apis.dart';
 import 'package:server_plex/src/api/plex_items_api.dart';
 import 'package:server_plex/src/api/plex_trickplay_api.dart';
+import 'package:server_plex/src/plex_item_mapper.dart' show plexSectionPrefix;
 import 'package:test/test.dart';
 
 class _FakeServer extends Interceptor {
@@ -42,67 +43,7 @@ Map<String, dynamic> _episode(String key, String title, [String? aired]) => {
   'originallyAvailableAt': ?aired,
 };
 
-class _MemoryStore implements PlexConfigStore {
-  final values = <String, String>{};
-
-  @override
-  Future<String?> read(String key) async => values[key];
-
-  @override
-  Future<void> write(String key, String value) async => values[key] = value;
-}
-
 void main() {
-  group('Plex user configuration', () {
-    PlexUsersApi api(PlexConfigStore? store, {String machine = 'server-a'}) {
-      final (dio, _) = _recordingDio({'machineIdentifier': machine});
-      return PlexUsersApi(dio, () => 'account', (_) {}, configStore: store);
-    }
-
-    test('hiding Live TV survives a reload', () async {
-      final store = _MemoryStore();
-      final first = api(store);
-      final config = await first.getUserConfiguration();
-      expect(config.myMediaExcludes, isEmpty);
-
-      await first.updateUserConfiguration(
-        config.copyWith(myMediaExcludes: ['livetv']),
-      );
-
-      final reloaded = await api(store).getUserConfiguration();
-      expect(reloaded.myMediaExcludes, ['livetv']);
-    });
-
-    test('each server keeps its own settings', () async {
-      final store = _MemoryStore();
-      await api(store).updateUserConfiguration(
-        const UserConfiguration().copyWith(myMediaExcludes: ['livetv']),
-      );
-      final other = await api(store, machine: 'server-b').getUserConfiguration();
-      expect(other.myMediaExcludes, isEmpty);
-    });
-
-    test('nothing saved yet reads Hide Watched in Latest as off', () async {
-      expect(
-        (await api(_MemoryStore()).getUserConfiguration()).hidePlayedInLatest,
-        isFalse,
-      );
-      expect(
-        (await api(null).getUserConfiguration()).hidePlayedInLatest,
-        isFalse,
-      );
-    });
-
-    test('without storage it reads defaults and refuses to save', () async {
-      final noStore = api(null);
-      expect((await noStore.getUserConfiguration()).myMediaExcludes, isEmpty);
-      expect(
-        noStore.updateUserConfiguration(const UserConfiguration()),
-        throwsUnsupportedError,
-      );
-    });
-  });
-
   test(
     'a library page asks Plex for the type, sort, filter and window',
     () async {
@@ -520,6 +461,79 @@ void main() {
           401,
         ),
       ),
+    );
+  });
+
+  test('the user configuration is saved to the store and read back by user, '
+      'with Plex defaults until one is saved', () async {
+    final saved = <String, Map<String, dynamic>>{};
+    final PlexUserConfigurationStore store = (
+      read: (userId) => saved[userId],
+      write: (userId, json) async => saved[userId] = json,
+    );
+    final (dio, requests) = _recordingDio(const {});
+    var userId = 'owner';
+    final api = PlexUsersApi(dio, () => userId, (_) {}, configStore: store);
+
+    expect((await api.getUserConfiguration()).hidePlayedInLatest, isFalse);
+    await api.updateUserConfiguration(
+      const UserConfiguration(
+        orderedViews: ['plex-section-2', 'plex-section-1'],
+        myMediaExcludes: ['plex-section-3'],
+      ),
+    );
+    final config = await api.getUserConfiguration();
+    expect(config.orderedViews, ['plex-section-2', 'plex-section-1']);
+    expect(config.myMediaExcludes, ['plex-section-3']);
+
+    userId = 'home-member';
+    expect((await api.getUserConfiguration()).orderedViews, isEmpty);
+    expect(requests, isEmpty);
+  });
+
+  test('views follow the saved order, with the rest after in server order, '
+      'and leave out hidden libraries unless asked', () async {
+    final (dio, _) = _recordingDio({
+      'Directory': [
+        {'key': '1', 'title': 'Movies', 'type': 'movie'},
+        {'key': '2', 'title': 'TV Shows', 'type': 'show'},
+        {'key': '3', 'title': 'Docs', 'type': 'movie'},
+      ],
+    });
+    Future<List<Object?>> idsFor(
+      List<String> order, {
+      List<String> hidden = const [],
+      bool includeHidden = false,
+    }) async {
+      final response = await PlexUserViewsApi(
+        dio,
+        () async =>
+            UserConfiguration(orderedViews: order, myMediaExcludes: hidden),
+      ).getUserViews(includeHidden: includeHidden);
+      return [for (final view in response['Items'] as List) view['Id']];
+    }
+
+    expect(await idsFor(const []), [
+      '${plexSectionPrefix}1',
+      '${plexSectionPrefix}2',
+      '${plexSectionPrefix}3',
+      'livetv',
+    ]);
+    expect(await idsFor(['livetv', '${plexSectionPrefix}3']), [
+      'livetv',
+      '${plexSectionPrefix}3',
+      '${plexSectionPrefix}1',
+      '${plexSectionPrefix}2',
+    ]);
+    final hidden = ['${plexSectionPrefix}2'];
+    expect(await idsFor(const [], hidden: hidden), [
+      '${plexSectionPrefix}1',
+      '${plexSectionPrefix}3',
+      'livetv',
+    ]);
+    expect(
+      await idsFor(const [], hidden: hidden, includeHidden: true),
+      hasLength(4),
     );
   });
 
@@ -1619,5 +1633,25 @@ void main() {
         'http://plex:32400/library/metadata/1715/clearLogo?X-Plex-Token=tok',
       );
     });
+  });
+
+  // The fork's original report: hiding Live TV did not stick on Plex.
+  test('hiding Live TV survives a reload', () async {
+    final saved = <String, Map<String, dynamic>>{};
+    final PlexUserConfigurationStore store = (
+      read: (userId) => saved[userId],
+      write: (userId, json) async => saved[userId] = json,
+    );
+    PlexUsersApi api() {
+      final (dio, _) = _recordingDio(const {});
+      return PlexUsersApi(dio, () => 'account', (_) {}, configStore: store);
+    }
+
+    final config = await api().getUserConfiguration();
+    expect(config.myMediaExcludes, isEmpty);
+    await api().updateUserConfiguration(
+      config.copyWith(myMediaExcludes: ['livetv']),
+    );
+    expect((await api().getUserConfiguration()).myMediaExcludes, ['livetv']);
   });
 }

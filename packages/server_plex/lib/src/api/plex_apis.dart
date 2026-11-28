@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:server_core/server_core.dart';
 
@@ -16,6 +14,14 @@ Future<Map<String, dynamic>> plexContainer(
   );
   return response.data?['MediaContainer'] as Map<String, dynamic>? ?? const {};
 }
+
+/// Where a Plex user's [UserConfiguration] is kept, as its JSON, by user id.
+/// Plex has nowhere to store Library Visibility or Library Order, so the app
+/// keeps them on the device.
+typedef PlexUserConfigurationStore = ({
+  Map<String, dynamic>? Function(String userId) read,
+  Future<void> Function(String userId, Map<String, dynamic> json) write,
+});
 
 class PlexImageApi implements ImageApi {
   final String Function() _baseUrl;
@@ -137,38 +143,18 @@ class PlexSystemApi implements SystemApi {
   }
 }
 
-/// Where a Plex account's app-side settings are kept. Plex has no server
-/// route for them, so the host app supplies local storage.
-abstract interface class PlexConfigStore {
-  Future<String?> read(String key);
-  Future<void> write(String key, String value);
-}
-
 class PlexUsersApi implements UsersApi {
   final Dio _dio;
   final String Function() _userId;
   final void Function(UserPolicy policy) _onPolicy;
-  final PlexConfigStore? _store;
-  String? _machineId;
+  final PlexUserConfigurationStore? _configStore;
 
   PlexUsersApi(
     this._dio,
     this._userId,
     this._onPolicy, {
-    PlexConfigStore? configStore,
-  }) : _store = configStore;
-
-  /// One entry per server and account, since library ids only mean something
-  /// on the server that issued them.
-  Future<String> _configKey() async {
-    var machine = _machineId;
-    if (machine == null) {
-      final identity = await plexContainer(_dio, '/identity');
-      machine = identity['machineIdentifier']?.toString() ?? 'unknown';
-      _machineId = machine;
-    }
-    return 'plex_user_configuration/$machine/${_userId()}';
-  }
+    PlexUserConfigurationStore? configStore,
+  }) : _configStore = configStore;
 
   /// Plex has no route for the signed in user, so this checks the token
   /// against the server and answers with the id the session already has.
@@ -206,51 +192,29 @@ class PlexUsersApi implements UsersApi {
   Future<List<AccessSchedule>?> getAccessSchedules(String userId) async =>
       const [];
 
-  /// What a Plex account reports when nothing is saved on the device yet.
-  /// Plex has no server setting for hiding watched items in Latest, so it
-  /// reads as off rather than the Jellyfin default, which would otherwise
-  /// seed Hide Watched in the Recently Added rows.
-  static const _defaultConfiguration = UserConfiguration(
-    hidePlayedInLatest: false,
-  );
-
   @override
   Future<AccessWindow?> getAccessWindow() async => null;
 
-  /// Plex keeps no library visibility or order for an account, so what the
-  /// user sets in the app is kept on this device. A missing or unreadable
-  /// entry reads as the defaults.
   @override
   Future<UserConfiguration> getUserConfiguration() async {
-    final store = _store;
-    if (store == null) return _defaultConfiguration;
-    try {
-      final raw = await store.read(await _configKey());
-      if (raw == null) return _defaultConfiguration;
-      final json = jsonDecode(raw);
-      if (json is! Map<String, dynamic>) return _defaultConfiguration;
-      return UserConfiguration.fromJson(json);
-    } catch (_) {
-      return _defaultConfiguration;
-    }
+    final json = _configStore?.read(_userId());
+    return json == null
+        ? const UserConfiguration(hidePlayedInLatest: false)
+        : UserConfiguration.fromJson(json);
   }
 
-  /// Throws when nothing can keep the change, so the settings screen puts the
-  /// toggle back and says it didn't save rather than pretending it did.
   @override
-  Future<void> updateUserConfiguration(UserConfiguration config) async {
-    final store = _store;
-    if (store == null) {
-      throw UnsupportedError("Plex settings can't be saved without storage");
-    }
-    await store.write(await _configKey(), jsonEncode(config.toJson()));
-  }
+  Future<void> updateUserConfiguration(UserConfiguration config) async =>
+      _configStore?.write(_userId(), config.toJson());
 }
 
 class PlexUserViewsApi implements UserViewsApi {
   final Dio _dio;
 
-  PlexUserViewsApi(this._dio);
+  /// The saved order and the libraries hidden from My Media.
+  final Future<UserConfiguration> Function() _config;
+
+  PlexUserViewsApi(this._dio, this._config);
 
   @override
   Future<Map<String, dynamic>> getUserViews({
@@ -273,7 +237,17 @@ class PlexUserViewsApi implements UserViewsApi {
         'ImageTags': <String, dynamic>{},
       },
     ];
-    return plexItemsResult(views);
+    final config = await _config();
+    final order = config.orderedViews;
+    // Jellyfin leaves out what the user hid from My Media unless asked.
+    final shown = [
+      for (final view in views)
+        if (includeHidden || !config.myMediaExcludes.contains(view['Id'])) view,
+    ];
+    return plexItemsResult([
+      for (final id in order) ...shown.where((view) => view['Id'] == id),
+      ...shown.where((view) => !order.contains(view['Id'])),
+    ]);
   }
 }
 
